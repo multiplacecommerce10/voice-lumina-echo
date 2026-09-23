@@ -1,0 +1,1 @@
+UPDATE public.leads SET status='checkout_started', recovery_email_sent_at=NULL, checkout_started_at=now()-interval '45 minutes' WHERE id='1cb85011-a98e-46a9-87e9-104a4cc8cb6d';

@@ -1,0 +1,207 @@
+{
+  "version": 1,
+  "sdk_version": "3.0.1",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://dyoabjqhemmhzjqknnjw.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "conscious-voice-journey",
+      "version": "0.1.0",
+      "title": "Conscious Voice Journey"
+    },
+    "tools": [
+      {
+        "name": "course_info",
+        "title": "Course, tiers and plans",
+        "description": "Authoritative details about The Power of Conscious Voice: course model, cohort rules, what the Live and Complete tiers include, and the plan durations currently offered.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "tier": {
+              "default": "both",
+              "description": "Which tier to describe.",
+              "type": "string",
+              "enum": [
+                "live",
+                "complete",
+                "both"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_enrollments",
+        "title": "List enrollments",
+        "description": "List enrolled students of The Power of Conscious Voice with tier, duration, access status and billing period. Requires an admin account.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "default": 25,
+              "description": "How many enrollments to return, newest first.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "email": {
+              "default": null,
+              "description": "Optional: only return enrollments for this student email.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "access_status": {
+              "default": "any",
+              "description": "Optional access-status filter.",
+              "type": "string",
+              "enum": [
+                "active",
+                "grace",
+                "expired",
+                "any"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_leads",
+        "title": "List leads and abandoned checkouts",
+        "description": "List people who submitted the enrollment form, including abandoned checkouts and recovery-email history. Requires an admin account.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "default": 25,
+              "description": "How many leads to return, newest first.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "status": {
+              "default": null,
+              "description": "Optional status filter, for example: new, checkout_started, abandoned, paid, checkout_completed.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "email": {
+              "default": null,
+              "description": "Optional: only return the lead with this email.",
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "preview_email",
+        "title": "Preview a student email",
+        "description": "Generate the exact subject and body of one of the student emails (welcome/enrollment confirmation, member-area access credentials, or abandoned-checkout recovery) for review. Generates text only — it never sends anything.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "welcome",
+                "credentials",
+                "recovery"
+              ],
+              "description": "Which email to render."
+            },
+            "full_name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Recipient full name."
+            },
+            "tier": {
+              "default": "complete",
+              "description": "Enrollment tier.",
+              "type": "string",
+              "enum": [
+                "live",
+                "complete"
+              ]
+            },
+            "duration_months": {
+              "default": 6,
+              "description": "Plan duration in months.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "plan_intended": {
+              "default": null,
+              "description": "Optional plan key such as complete__6m, used by the recovery email.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "resume_code": {
+              "default": null,
+              "description": "Optional resume code, used by the recovery email link.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "is_renewal": {
+              "default": false,
+              "description": "Welcome email only: render the renewal variant instead of first enrollment.",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "kind",
+            "full_name"
+          ],
+          "additionalProperties": false
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

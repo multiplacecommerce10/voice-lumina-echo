@@ -89,17 +89,25 @@ function PrivatePaymentSession({ token }: { token: string }) {
     try { const result = await returned({ data: { token, ...returnInput, action: "capture", confirm: true } }); if ("error" in result) setError(result.error ?? "Payment verification unavailable"); else setPayment(result); }
     catch { setError("Payment verification pending. Do not submit another payment."); } finally { setBusy(false); }
   }
-  return <main className="mx-auto max-w-3xl px-5 py-10" data-diagnostic-version={PRIVATE_DIAGNOSTIC_VERSION} data-diagnostic-form-storage="private-full-profile-v1" data-diagnostic-form-saved={profile ? "true" : "false"}>
+  return <main className="mx-auto max-w-3xl px-5 py-10" data-private-offer-layout="concise-v1" data-diagnostic-version={PRIVATE_DIAGNOSTIC_VERSION} data-diagnostic-form-storage="private-full-profile-v1" data-diagnostic-form-saved={profile ? "true" : "false"}>
     <img src={logo} alt="Tecendo Som" className="h-16 w-16 object-contain mb-5" />
     {!invite?.valid && <h1 className="font-display text-3xl text-foreground">Private payment invitation</h1>}
     {!token ? <p role="alert" className="mt-8">A private invitation is required.</p> : !invite ? <p className="mt-8">Checking invitation…</p> : !invite.valid ? <p role="alert" className="mt-8">{invite.error}</p> : <>
       <article aria-label="Private guest offer" data-offer-version="private-guest-card-v1" className="relative overflow-hidden rounded-lg border border-secondary bg-card p-5 sm:p-7 text-card-foreground">
         <div className="absolute inset-x-0 top-0 h-1 bg-secondary" aria-hidden="true" />
-        <div className="mb-4 flex items-center gap-3 text-secondary"><TicketCheck className="h-6 w-6 shrink-0" aria-hidden="true" /><span className="text-sm font-semibold">Private guest · Tecendo Som</span></div>
+        <div className="mb-4 flex items-center gap-3 text-secondary"><TicketCheck className="h-6 w-6 shrink-0" aria-hidden="true" /><span className="text-sm font-semibold">PRIVATE INVITATION</span></div>
         <h1 className="font-display text-3xl break-words tracking-normal">{DIAGNOSTIC_DISPLAY_LABEL}</h1>
-        <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1"><span className="font-display text-5xl tracking-normal">US$ 1</span><span className="text-sm text-muted-foreground">One payment per provider · No renewal</span></div>
-        <p className="mt-5 text-muted-foreground">You are the payer. Tecendo Som receives one real US$1 payment per selected provider. With your consent, all form answers are saved privately before checkout. After the first confirmed payment, you receive one 7-day Complete courtesy access to the members area and the welcome and account access emails, once, at the email you enter in the form (not your provider account email). A second provider payment does not add or extend access. No subscription or renewal. Provider receipts and processing fees may apply; your total is US$1.</p>
-        <p className="mt-5 border-t border-border pt-4 text-sm text-muted-foreground">This invitation expires {new Date(invite.expiresAt ?? "").toLocaleString()}.</p>
+        <div className="mt-5 space-y-2"><p className="font-display text-5xl tracking-normal">US$ 1</p><p className="text-sm leading-relaxed text-muted-foreground">One-time payment per provider · No renewal</p></div>
+        <p className="mt-5 text-base leading-relaxed">Enjoy 7 days of Complete access after your first confirmed payment.</p>
+        <ul className="mt-4 space-y-2 text-sm leading-relaxed text-muted-foreground">
+          <li>Welcome and access instructions go to the email in your form.</li>
+          <li>Testing a second provider will not extend your access.</li>
+        </ul>
+        <div className="mt-5 space-y-2 border-t border-border pt-4 text-sm leading-relaxed text-muted-foreground">
+          <p>Payment to Tecendo Som</p>
+          {invite.expiresAt && <p>Invitation valid until <time dateTime={invite.expiresAt}>{new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(new Date(invite.expiresAt))}</time>.</p>}
+          <p>Your bank may apply currency conversion fees.</p>
+        </div>
       </article>
       {error && <p role="alert" className="my-5 text-destructive">{error}</p>}
       {stripeAttempt ? <section className="mt-8 border-t border-border pt-6"><h2 className="text-xl">Stripe — {DIAGNOSTIC_DISPLAY_LABEL}</h2>
@@ -109,15 +117,15 @@ function PrivatePaymentSession({ token }: { token: string }) {
         <p className="my-4">{payment?.status === "paid" ? "US$1 payment confirmed. Your 7-day courtesy access and welcome emails are on the way." : payment?.status === "cancelled" ? "Payment cancelled. No payment was confirmed." : payment?.approved ? "PayPal approval verified. Confirm the real US$1 payment to Tecendo Som below." : "Payment is not confirmed. Awaiting verification."}</p>
         {payment?.approved && <Button disabled={busy} onClick={pay}>{busy ? "Verifying…" : "Pay US$1"}</Button>}
         <Button className="mt-5" variant="outline" onClick={() => { setReturnInput(null); sessionStorage.removeItem(`private-diagnostic-return:${token}`); setPayment(null); read({ data: { token } }).then(setInvite); }}>Other provider</Button>
-      </section> : !profile ? <div className="mt-8"><EnrollmentForm embedded diagnostic onComplete={async values => {
+      </section> : !profile ? <div className="mt-8"><h2 className="mb-5 text-xl font-display">Your details</h2><EnrollmentForm embedded diagnostic onComplete={async values => {
         const result = await saveForm({ data: { token, profile: values, consent: true } });
         if ("error" in result) throw new Error(result.error);
         setProfile(values);
       }} /></div> : <section className="mt-8 border-t border-border pt-6">
         <h2 className="text-xl">Choose your test payment</h2>
-        <label className="flex items-start gap-3 my-5"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>My answers have been saved privately with my storage consent. I authorize one real US$1 payment to Tecendo Som per selected provider. The first confirmed payment provides Complete courtesy access for 7 days and welcome and account access emails once to my form email. No subscription or renewal; a second provider payment does not add or extend access.</span></label>
+        <label className="flex items-start gap-3 my-5 text-sm leading-relaxed"><input className="mt-1 shrink-0" type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>I authorize a one-time US$1 payment to Tecendo Som through the provider I select. No automatic renewal.</span></label>
         <div className="flex flex-wrap gap-4"><Button disabled={busy || !consent || !liveStripe || invite.attempts?.some(a => a.provider === "stripe" && ["paid", "cancelled", "failed", "expired"].includes(a.status))} onClick={() => choose("stripe")}>Continue to Stripe — US$1</Button><Button disabled={busy || !consent || invite.attempts?.some(a => a.provider === "paypal" && ["paid", "cancelled", "failed", "expired"].includes(a.status))} onClick={() => choose("paypal")}>{busy ? "Preparing…" : "Continue to PayPal — US$1"}</Button></div>
-        <p className="mt-5 text-sm text-muted-foreground">{invite.taxNotice}{!liveStripe && " Live Stripe checkout is available on the published site only."}</p>
+        {!liveStripe && <p className="mt-5 text-sm text-muted-foreground">Live Stripe checkout is available on the published site only.</p>}
         <ul className="mt-5 text-sm">{invite.attempts?.map(a => <li key={a.id}>{a.provider}: {a.status}</li>)}</ul>
       </section>}
     </>}

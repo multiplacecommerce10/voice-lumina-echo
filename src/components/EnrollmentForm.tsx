@@ -541,7 +541,7 @@ export function EnrollmentForm({ initialProfile, onComplete, embedded = false, d
             </div>
           )}
 
-          {diagnostic && <label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={storageConsent} onChange={e => setStorageConsent(e.target.checked)} aria-label="Consent to private answer storage" /><span>I consent to Tecendo Som privately storing all my form answers and this consent when I select “Continue with these details,” before payment, for this private guest test. My form email will receive the welcome and account access emails after the first confirmed US$1 payment. The Complete courtesy lasts 7 days from that payment, with no renewal; a second provider payment does not add or extend access.</span></label>}
+          {diagnostic && <label className="flex items-start gap-3 text-sm leading-relaxed"><input className="mt-1 shrink-0" type="checkbox" checked={storageConsent} onChange={e => setStorageConsent(e.target.checked)} aria-label="Consent to private answer storage" /><span>I consent to Tecendo Som privately storing all my form answers and this consent before checkout for this private guest test.</span></label>}
           <div className="flex flex-col items-center gap-3 pt-2">
             <Button
               type="submit"
@@ -551,7 +551,7 @@ export function EnrollmentForm({ initialProfile, onComplete, embedded = false, d
               {status === "submitting" ? "Sending…" : embedded ? "Continue with these details" : "Submit"}
             </Button>
             <p className="text-xs text-muted-foreground/80 text-center max-w-md">
-              {diagnostic ? "All your answers are saved privately before checkout. Saving does not create an account, grant access or send emails; those actions require confirmed payment." : "Your information is kept private and used only to welcome and prepare you for the course."}
+              {diagnostic ? "Your answers stay private. Continuing saves them; it does not make a payment." : "Your information is kept private and used only to welcome and prepare you for the course."}
             </p>
           </div>
         </form>

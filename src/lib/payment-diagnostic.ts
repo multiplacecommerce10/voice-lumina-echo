@@ -2,7 +2,7 @@
 export const PAYMENT_DIAGNOSTIC = "conscious_voice_usd1_v1";
 export const DIAGNOSTIC_LABEL = "Convidado especial — US$ 1";
 /** Visible English title only; provider objects and exact catalog validation keep DIAGNOSTIC_LABEL. */
-export const DIAGNOSTIC_DISPLAY_LABEL = "Special Guest — US$ 1";
+export const DIAGNOSTIC_DISPLAY_LABEL = "Special Guest";
 
 export function classifyDiagnosticEvent(event: { livemode?: boolean; type?: string; data?: { object?: any } }, env: string) {
   const obj = event.data?.object;

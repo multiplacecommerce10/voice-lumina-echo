@@ -2,8 +2,9 @@
 
 ## Current request — USD 1 live diagnostics (November 7, 2026)
 - [x] Isolate signed Stripe diagnostic events and remove existing-account password resets; mocked safety tests, regressions and requested typecheck pass.
-- [ ] Save safe changed files to the existing backup branch and verify remote hashes; publish once after checks.
-- [ ] Verify published site/endpoints; prepare one PayPal order with idempotency without capture. Stripe embedded session deferred: available owner session lacks existing admin permission; hosted redirect checkout is not supported by the integration.
+- [x] Save ten safe changed/new files to the existing backup branch and verify remote hashes; publish requested once after checks.
+- [x] Single verification: homepage 200, unsigned PayPal 401 / Stripe 400. One PayPal order 33F772518X630333V prepared/re-read at USD 1.00, no capture.
+- [ ] Confirm corrected deployment — post-request static asset is still the pre-change fingerprint. Stripe session blocked until deployment confirmation and authorized admin session; hosted redirect checkout is not supported by the integration.
 
 ## Current request — Reversible GitHub snapshot (November 7, 2026)
 - [x] Inspect local state and existing GitHub repository without reconnecting or changing main.

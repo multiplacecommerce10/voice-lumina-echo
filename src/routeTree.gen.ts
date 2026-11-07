@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as MembershipRouteImport } from './routes/membership'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as PrivatePaymentRouteImport } from './routes/private-payment'
 import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ScholarshipLoginRouteImport } from './routes/scholarship-login'
@@ -90,6 +91,11 @@ const MembershipRoute = MembershipRouteImport.update({
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivatePaymentRoute = PrivatePaymentRouteImport.update({
+  id: '/private-payment',
+  path: '/private-payment',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RefundPolicyRoute = RefundPolicyRouteImport.update({
@@ -358,6 +364,7 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRoute
   '/membership': typeof MembershipRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/private-payment': typeof PrivatePaymentRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/scholarship-login': typeof ScholarshipLoginRoute
@@ -412,6 +419,7 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/membership': typeof MembershipRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/private-payment': typeof PrivatePaymentRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/scholarship-login': typeof ScholarshipLoginRoute
@@ -466,6 +474,7 @@ export interface FileRoutesById {
   '/mcp': typeof McpRoute
   '/membership': typeof MembershipRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/private-payment': typeof PrivatePaymentRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/scholarship-login': typeof ScholarshipLoginRoute
@@ -522,6 +531,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/membership'
     | '/privacy-policy'
+    | '/private-payment'
     | '/refund-policy'
     | '/reset-password'
     | '/scholarship-login'
@@ -576,6 +586,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/membership'
     | '/privacy-policy'
+    | '/private-payment'
     | '/refund-policy'
     | '/reset-password'
     | '/scholarship-login'
@@ -629,6 +640,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/membership'
     | '/privacy-policy'
+    | '/private-payment'
     | '/refund-policy'
     | '/reset-password'
     | '/scholarship-login'
@@ -685,6 +697,7 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   MembershipRoute: typeof MembershipRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
+  PrivatePaymentRoute: typeof PrivatePaymentRoute
   RefundPolicyRoute: typeof RefundPolicyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ScholarshipLoginRoute: typeof ScholarshipLoginRoute
@@ -756,6 +769,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy-policy'
       fullPath: '/privacy-policy'
       preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/private-payment': {
+      id: '/private-payment'
+      path: '/private-payment'
+      fullPath: '/private-payment'
+      preLoaderRoute: typeof PrivatePaymentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/refund-policy': {
@@ -1166,6 +1186,7 @@ const rootRouteChildren: RootRouteChildren = {
   McpRoute: McpRoute,
   MembershipRoute: MembershipRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
+  PrivatePaymentRoute: PrivatePaymentRoute,
   RefundPolicyRoute: RefundPolicyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ScholarshipLoginRoute: ScholarshipLoginRoute,

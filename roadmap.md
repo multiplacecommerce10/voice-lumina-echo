@@ -1,5 +1,11 @@
 # Roadmap — Email notifications (Taskade unified flow)
 
+## Current request — Private post-form payer test
+- [x] Build restricted invitations, service-only diagnostic state, isolated shared form and PayPal payer-confirmed capture; Stripe creation blocked on tax.
+- [x] Test invalid/expired/replayed/concurrent requests, provider facts and absence of course side effects; browser verified through consent without starting payment.
+- [ ] Verify safe GitHub backup update, publish once, verify new version and issue private invitation.
+- [ ] Stripe checkout awaits resolution of unsupported requested tax collection; do not infer exemption.
+
 ## Current request — USD 1 live diagnostics (November 7, 2026)
 - [x] Isolate signed Stripe diagnostic events and remove existing-account password resets; mocked safety tests, regressions and requested typecheck pass.
 - [x] Save ten safe changed/new files to the existing backup branch and verify remote hashes; publish requested once after checks.
@@ -32,7 +38,7 @@
 ## Current request — Missing abandoned-cart test
 - [x] Confirm the recent test was marked abandoned and recovery delivery was accepted; no repeat sends or status changes.
 - [x] Fix the admin pending-enrollment query to include checkout leads whose source is NULL.
-- [x] Query regression test passes; existing Historical test recipient test is visible as abandoned in the signed-in admin page; automatic build OK.
+- [x] Query regression test passes; existing Synthetic fixture test is visible as abandoned in the signed-in admin page; automatic build OK.
 - [ ] Publish this panel correction — requires explicit owner approval.
 
 ## Current request — Preview failure investigation
@@ -42,12 +48,12 @@
 - [x] Verify the preview after the configuration update: automatic build OK at 00:55:17 UTC, authenticated lesson and flashcard navigation pass with no HTTP/runtime errors or mid-request dependency reload.
 
 ## Current request — Course and scholarship login branding
-- [x] Confirm Historical test recipient's existing Complete courtesy membership through November 13 and stored structure: six modules, eleven lessons, thirteen materials.
+- [x] Confirm Synthetic fixture's existing Complete courtesy membership through November 13 and stored structure: six modules, eleven lessons, thirteen materials.
 - [x] Give the course login its own course branding; reserve scholarship branding for the post-selection flow.
 - [x] Verify both login banners, password visibility, signed-out course redirect and successful build; no permission changes or publishing.
-- [x] Verify the course signed in as Historical test recipient — six modules, eleven lesson cards and the Module 2 video placeholder rendered; existing credentials remain unchanged.
+- [x] Verify the course signed in as Synthetic fixture — six modules, eleven lesson cards and the Module 2 video placeholder rendered; existing credentials remain unchanged.
 - [x] Request authorized publication of the normal course login and catalog; basic security checks found no issues (deep code analysis not run).
-- [x] Send Historical test recipient one corrected direct course link via Hostinger (204), preserving his password and explaining the pending publication; no other emails resent.
+- [x] Send Synthetic fixture one corrected direct course link via Hostinger (204), preserving his password and explaining the pending publication; no other emails resent.
 - [ ] Confirm the official catalog after deployment completes — latest post-request check still returned 404; publication completion is outside this turn's control.
 
 ## Current request — Further voice scholarship (October 13, second batch)
@@ -84,12 +90,12 @@
 
 Two distinct emails, branched by Taskade on `payment_status` / `enrollment_status`:
 
-- [x] **Recovery email** (lead não finalizou) — `unpaid` / `incomplete` — enviado e validado (Historical test recipient, tentativa 7, HTTP 200)
+- [x] **Recovery email** (lead não finalizou) — `unpaid` / `incomplete` — enviado e validado (Synthetic fixture, tentativa 7, HTTP 200)
 - [ ] **Confirmation email** (aluno inscrito/pago) — `paid` / `completed` — testar ramo pago no Taskade
   - [ ] Preview/proofread do email de confirmação (/debug/confirmation-email)
   - [ ] Teste do ramo pago no Taskade (payload `paid`/`completed`)
   - [ ] Checkout sandbox completo end-to-end
-  - [x] Teste do ramo pago no Taskade — Historical test recipient (Lahore/PK), Complete 6 meses, HTTP 200
+  - [x] Teste do ramo pago no Taskade — Synthetic fixture Azeem (Lahore/PK), Complete 6 meses, HTTP 200
 
 - [ ] Publicar site e testar chat publicado
 - [ ] GitHub: sincronização sem histórico pesado (depende do menu + > GitHub, ação da usuária)
@@ -101,7 +107,7 @@ Two distinct emails, branched by Taskade on `payment_status` / `enrollment_statu
 - [ ] #3 Email: confirmações e lembretes via Taskade
 - [ ] #1 Teste E2E (bloqueado por #7, #2, #3)
 
-- [x] Teste único matrícula+credenciais para redacted-contact@example.com (autorizado por Priscila)
+- [x] Teste único matrícula+credenciais para redacted@example.com (autorizado por Priscila)
 
 - [x] Module 1 renamed: Foundations of Vocal Technique & Proprioception
 - [x] Module 2 lesson with video placeholder + 52 NotebookLM flashcards

@@ -17,3 +17,5 @@
 - Lifecycle emails go through the durable notification_outbox (pending_notifications written with the state CAS, then drained); never send inline, never send in sandbox, never set or email passwords.
 - Stripe diagnostic markers are recognized only after signature verification and are audit-only before lifecycle/account/delivery work; unmarked course events retain their existing validation and processing.
 - Stripe account access uses the shared safe-access email builder: existing passwords are never changed and only newly created accounts receive a choose-password link.
+- Private payment invitations authorize only diagnostic actions through same-origin POSTs and hashed expiring bearer tokens; service-only attempts use unique invitation/provider reservations and provider idempotency keys, so they cannot grant admin or course privileges.
+- Diagnostic profile answers use the shared enrollment schema but are never stored; PayPal captures require explicit payer confirmation and verified bound order/payee facts, while unresolved requested Stripe tax support blocks session creation.

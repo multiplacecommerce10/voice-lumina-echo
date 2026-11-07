@@ -22,14 +22,15 @@ const musicLevels = [
   "Advanced — performer / teacher / professional",
 ];
 
-export function EnrollmentForm({ initialProfile, onComplete, embedded = false }: { initialProfile?: Partial<EnrollmentProfile>; onComplete?: (profile: EnrollmentProfile) => void; embedded?: boolean }) {
+export function EnrollmentForm({ initialProfile, onComplete, embedded = false, diagnostic = false }: { initialProfile?: Partial<EnrollmentProfile>; onComplete?: (profile: EnrollmentProfile) => void; embedded?: boolean; diagnostic?: boolean }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [restoredProfile, setRestoredProfile] = useState(initialProfile);
   useEffect(() => {
+    if (diagnostic) return;
     if (initialProfile) { setRestoredProfile(initialProfile); return; }
     try { const saved = sessionStorage.getItem(PROFILE_STORAGE_KEY); if (saved) setRestoredProfile(JSON.parse(saved)); } catch { /* storage unavailable */ }
-  }, [initialProfile]);
+  }, [initialProfile, diagnostic]);
   const submit = useServerFn(submitEnrollment);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -136,8 +137,8 @@ export function EnrollmentForm({ initialProfile, onComplete, embedded = false }:
 
     const form = e.currentTarget;
     const fd = new FormData(form);
-    ensureUtmsCaptured();
-    const { utms, landingUrl, referrer } = getAttributionContext();
+    if (!diagnostic) ensureUtmsCaptured();
+    const { utms, landingUrl, referrer } = diagnostic ? { utms: {}, landingUrl: "", referrer: "" } : getAttributionContext();
     const attributionParts = [
       utmsToString(utms),
       landingUrl ? `landing=${landingUrl}` : "",
@@ -187,6 +188,7 @@ export function EnrollmentForm({ initialProfile, onComplete, embedded = false }:
     }
     setFieldErrors({});
     if (onComplete) { setStatus("idle"); onComplete(checked.data); return; }
+    if (diagnostic) { setStatus("error"); setErrorMsg("Private test unavailable."); return; }
     try {
       await submit({ data: payload });
       try { sessionStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(checked.data)); } catch { /* storage unavailable */ }
@@ -542,8 +544,7 @@ export function EnrollmentForm({ initialProfile, onComplete, embedded = false }:
               {status === "submitting" ? "Sending…" : embedded ? "Continue with these details" : "Submit"}
             </Button>
             <p className="text-xs text-muted-foreground/80 text-center max-w-md">
-              Your information is kept private and used only to welcome and prepare you for the
-              course.
+              {diagnostic ? "These answers are validated for this private test only and are not saved or submitted as a course application." : "Your information is kept private and used only to welcome and prepare you for the course."}
             </p>
           </div>
         </form>

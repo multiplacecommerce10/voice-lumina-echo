@@ -643,6 +643,124 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_diagnostic_attempts: {
+        Row: {
+          approval_url: string | null
+          capture_id: string | null
+          capture_lock_until: string | null
+          consent_at: string
+          consent_version: string
+          created_at: string
+          id: string
+          invite_id: string
+          paid_at: string | null
+          payee_id: string | null
+          profile_validated_at: string
+          provider: string
+          provider_id: string | null
+          return_state_hash: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approval_url?: string | null
+          capture_id?: string | null
+          capture_lock_until?: string | null
+          consent_at?: string
+          consent_version?: string
+          created_at?: string
+          id?: string
+          invite_id: string
+          paid_at?: string | null
+          payee_id?: string | null
+          profile_validated_at?: string
+          provider: string
+          provider_id?: string | null
+          return_state_hash?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approval_url?: string | null
+          capture_id?: string | null
+          capture_lock_until?: string | null
+          consent_at?: string
+          consent_version?: string
+          created_at?: string
+          id?: string
+          invite_id?: string
+          paid_at?: string | null
+          payee_id?: string | null
+          profile_validated_at?: string
+          provider?: string
+          provider_id?: string | null
+          return_state_hash?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_diagnostic_attempts_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "payment_diagnostic_invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_diagnostic_events: {
+        Row: {
+          attempt_id: string
+          created_at: string
+          event_id: string
+          event_type: string
+        }
+        Insert: {
+          attempt_id: string
+          created_at?: string
+          event_id: string
+          event_type: string
+        }
+        Update: {
+          attempt_id?: string
+          created_at?: string
+          event_id?: string
+          event_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_diagnostic_events_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "payment_diagnostic_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_diagnostic_invites: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          revoked_at: string | null
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          revoked_at?: string | null
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          token_hash?: string
+        }
+        Relationships: []
+      }
       paypal_checkout_intents: {
         Row: {
           admission_status: string
@@ -1115,8 +1233,103 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_diagnostic_stripe_event: {
+        Args: {
+          p_attempt: string
+          p_event: string
+          p_object: string
+          p_status: string
+          p_type: string
+        }
+        Returns: boolean
+      }
+      cancel_diagnostic_attempt: {
+        Args: { p_id: string; p_invite: string }
+        Returns: boolean
+      }
+      claim_diagnostic_capture: {
+        Args: { p_id: string; p_invite: string }
+        Returns: {
+          approval_url: string | null
+          capture_id: string | null
+          capture_lock_until: string | null
+          consent_at: string
+          consent_version: string
+          created_at: string
+          id: string
+          invite_id: string
+          paid_at: string | null
+          payee_id: string | null
+          profile_validated_at: string
+          provider: string
+          provider_id: string | null
+          return_state_hash: string | null
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "payment_diagnostic_attempts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_diagnostic_creation: {
+        Args: { p_id: string; p_invite: string }
+        Returns: {
+          approval_url: string | null
+          capture_id: string | null
+          capture_lock_until: string | null
+          consent_at: string
+          consent_version: string
+          created_at: string
+          id: string
+          invite_id: string
+          paid_at: string | null
+          payee_id: string | null
+          profile_validated_at: string
+          provider: string
+          provider_id: string | null
+          return_state_hash: string | null
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "payment_diagnostic_attempts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_active_membership: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      reserve_payment_diagnostic: {
+        Args: { p_hash: string; p_provider: string }
+        Returns: {
+          approval_url: string | null
+          capture_id: string | null
+          capture_lock_until: string | null
+          consent_at: string
+          consent_version: string
+          created_at: string
+          id: string
+          invite_id: string
+          paid_at: string | null
+          payee_id: string | null
+          profile_validated_at: string
+          provider: string
+          provider_id: string | null
+          return_state_hash: string | null
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "payment_diagnostic_attempts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       taken_slot_ids: { Args: never; Returns: string[] }
     }
     Enums: {

@@ -5,6 +5,7 @@ import {
   HeadContent,
   Scripts,
   ClientOnly,
+  useRouterState,
 } from "@tanstack/react-router";
 import { useEffect, lazy, Suspense, Component } from "react";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
@@ -118,29 +119,31 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const privateDiagnostic = useRouterState({ select: state => state.location.pathname === "/private-payment" });
   useEffect(() => {
+    if (privateDiagnostic) return;
     // captureUtms() is a no-op until analytics/marketing consent is given.
     captureUtms();
     const onConsentChange = () => captureUtms();
     window.addEventListener(CONSENT_EVENT, onConsentChange);
     return () => window.removeEventListener(CONSENT_EVENT, onConsentChange);
-  }, []);
+  }, [privateDiagnostic]);
   useScrollReveal();
 
   return (
     <>
-      <PaymentTestModeBanner />
+      {!privateDiagnostic && <PaymentTestModeBanner />}
       <Outlet />
-      <ClientOnly fallback={null}>
+      {!privateDiagnostic && <ClientOnly fallback={null}>
         <ChatBoundary>
           <Suspense fallback={null}>
             <CourseChatAgent />
           </Suspense>
         </ChatBoundary>
-      </ClientOnly>
-      <PreviewCacheToggle />
+      </ClientOnly>}
+      {!privateDiagnostic && <PreviewCacheToggle />}
       <Toaster />
-      <CookieConsentBanner />
+      {!privateDiagnostic && <CookieConsentBanner />}
     </>
   );
 }

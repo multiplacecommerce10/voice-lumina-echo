@@ -210,6 +210,11 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
               event: event.type, payload: { id: event.id, type: event.type,
                 diagnostic: true, amount_minor: diagnostic.amount, currency: diagnostic.currency,
                 object_id: diagnostic.objectId }, error: diagnostic.valid ? null : "Invalid diagnostic payment facts" });
+            if (diagnostic.valid && event.data?.object?.metadata?.diagnostic_attempt) {
+              const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+              const { applyPrivateStripeDiagnostic } = await import("@/lib/private-diagnostic.server");
+              await applyPrivateStripeDiagnostic(supabaseAdmin, event);
+            }
             return Response.json({ received: diagnostic.valid, diagnostic: true,
               outcome: diagnostic.valid ? "audit_only" : "rejected" }, { status: diagnostic.valid ? 200 : 400 });
           }

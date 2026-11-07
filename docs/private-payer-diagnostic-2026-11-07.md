@@ -27,3 +27,11 @@ Signed Stripe diagnostic events still audit before course lifecycle. Linked diag
 - Real browser: invitation required, invalid form rejected, valid fictitious form + consent enabled PayPal and kept Stripe blocked; no checkout button was pressed. Desktop/mobile fit checked.
 - Real live buyer approval/capture is intentionally untested and awaits the mother. This single-payment diagnostic does **not** test subscriptions, renewal, grace, admission or enrollment. Provider receipts and fees may occur; payer total remains USD 1.
 - Basic security scan reported no issues; deep analysis was not run.
+
+## Delivery evidence
+- Local implementation commit: `c45fc90`. Existing GitHub backup branch updated without changing main at `38f34c93dd6d8c7bc52570edae5a712320730200`; all 18 changed/new files returned exact staged blob hashes by GET.
+- Verified blobs: private server `a41c0b8026a1df5fd349bbd7b037d6b53d47a32d`; private route `547357a9a0f2589b1b01ec3b1ad075abd0de92ca`.
+- Final new mocks: 13 passed / 83 assertions; signed webhook safety: 11 passed / 77 assertions; payment safety 43 passed; checkout handler 10 passed; PayPal lifecycle/hardening 195 passed; catalog/contract scripts passed. Requested typecheck clean and automatic build OK.
+- One 24-hour private invitation generated; no financial objects associated with it. A separate revoked synthetic invitation verified database concurrency only.
+- Publication requested once. Subsequent live check: homepage 200, unsigned PayPal live 401, unsigned Stripe live 400, but `/private-payment` still 404 and the invited form did not render. Therefore the corrected deployment is **not confirmed**, and the invitation must not yet be represented as a working published payment link. No retry publication was issued.
+- Database SELECT 1 succeeded; all three diagnostic tables have RLS enabled. No existing course records modified.

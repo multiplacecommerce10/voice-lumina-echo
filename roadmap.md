@@ -3,7 +3,8 @@
 ## Current request — Private post-form payer test
 - [x] Build restricted invitations, service-only diagnostic state, isolated shared form and PayPal payer-confirmed capture; Stripe creation blocked on tax.
 - [x] Test invalid/expired/replayed/concurrent requests, provider facts and absence of course side effects; browser verified through consent without starting payment.
-- [ ] Verify safe GitHub backup update, publish once, verify new version and issue private invitation.
+- [x] Verify all 18 safe changed/new GitHub blobs, preserve main, request publication once and generate one 24-hour private invitation without financial objects.
+- [ ] Confirm deployment — live private route remains 404 after requested publication; invited form verified locally only. Do not present live payment as ready.
 - [ ] Stripe checkout awaits resolution of unsupported requested tax collection; do not infer exemption.
 
 ## Current request — USD 1 live diagnostics (November 7, 2026)

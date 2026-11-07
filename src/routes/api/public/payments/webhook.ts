@@ -10,6 +10,7 @@ import { EMAIL_BRAND, EMAIL_SENDERS, senderInstruction } from "@/lib/email-brand
 import { subscriptionContractFields } from "@/lib/subscription-state.server";
 import { GRACE_PERIOD_DAYS } from "@/lib/subscription-catalog";
 import { isMakeForwardingEnabled, MAKE_DISABLED_RESULT } from "@/lib/make-flag";
+import { classifyDiagnosticEvent } from "@/lib/payment-diagnostic";
 
 import {
   COURSE_START_UTC,
@@ -201,6 +202,17 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
 
 
         try {
+          // Signature/environment verification above is mandatory, even for diagnostics.
+          // Audit a minimal non-PII record and stop BEFORE lifecycle, accounts or delivery.
+          const diagnostic = classifyDiagnosticEvent(event, env);
+          if (diagnostic) {
+            await auditInbound({ ok: diagnostic.valid, status: diagnostic.valid ? 200 : 400,
+              event: event.type, payload: { id: event.id, type: event.type,
+                diagnostic: true, amount_minor: diagnostic.amount, currency: diagnostic.currency,
+                object_id: diagnostic.objectId }, error: diagnostic.valid ? null : "Invalid diagnostic payment facts" });
+            return Response.json({ received: diagnostic.valid, diagnostic: true,
+              outcome: diagnostic.valid ? "audit_only" : "rejected" }, { status: diagnostic.valid ? 200 : 400 });
+          }
           const isRelevant = RELEVANT_EVENT_PREFIXES.some((p) =>
             event.type?.startsWith(p),
           );
@@ -459,17 +471,9 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
                 }
               }
 
-              // Second enrollment email: member-area credentials. Only for a
-              // first paid enrollment (never on a renewal) and only when the
-              // payment is actually settled. The member account lives on this
-              // site (Supabase Auth): we create the login here, generate a
-              // first sign-in password and send the real credentials via
-              // Hostinger — no downstream automation involved.
-              let credentialsEmail: Awaited<
-                ReturnType<
-                  typeof import("@/lib/access-credentials-email").buildAccessCredentialsEmail
-                >
-              > | null = null;
+              // Existing passwords remain untouched; new students choose their
+              // own password through a secure link, never an emailed password.
+              let credentialsEmail: Awaited<ReturnType<typeof import("@/lib/stripe-account-access.server").prepareStripeAccountAccess>> | null = null;
               const credentialsTo = f.customer_email ?? leadEmail;
               if (
                 lifecycle.fulfillment_ready &&
@@ -478,46 +482,9 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
               ) {
                 try {
                   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-                  const { buildAccessCredentialsEmail } = await import(
-                    "@/lib/access-credentials-email"
-                  );
-
-                  // Strong random first sign-in password (URL-safe, no ambiguous chars).
-                  const raw = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
-                  const password = `Cv-${raw.slice(0, 10)}!`;
-
-                  const email = credentialsTo.toLowerCase();
-                  const { data: created, error: createErr } =
-                    await supabaseAdmin.auth.admin.createUser({
-                      email,
-                      password,
-                      email_confirm: true,
-                      user_metadata: { full_name: leadFullName ?? undefined },
-                    });
-                  if (createErr) {
-                    // Account already exists (e.g. re-enrollment): rotate the
-                    // password so the emailed credentials always work.
-                    const { data: list } = await supabaseAdmin.auth.admin.listUsers();
-                    const existing = list?.users?.find((u) => u.email?.toLowerCase() === email);
-                    if (existing) {
-                      const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(
-                        existing.id,
-                        { password },
-                      );
-                      if (updErr) throw updErr;
-                    } else {
-                      throw createErr;
-                    }
-                  } else if (!created?.user) {
-                    throw new Error("createUser returned no user");
-                  }
-
-                  credentialsEmail = buildAccessCredentialsEmail({
-                    fullName: leadFullName,
-                    membershipUrl: EMAIL_BRAND.membershipUrl,
-                    tier: resolvedTier,
-                    username: email,
-                    password,
+                  const { prepareStripeAccountAccess } = await import("@/lib/stripe-account-access.server");
+                  credentialsEmail = await prepareStripeAccountAccess(supabaseAdmin.auth.admin, {
+                    email: credentialsTo, fullName: leadFullName, eventId: event.id,
                   });
                 } catch (e) {
                   console.error("[stripe-webhook] credentials account/email build failed:", e);

@@ -1,9 +1,14 @@
 # Roadmap — Email notifications (Taskade unified flow)
 
+## Current request — USD 1 live diagnostics (November 7, 2026)
+- [x] Isolate signed Stripe diagnostic events and remove existing-account password resets; mocked safety tests, regressions and requested typecheck pass.
+- [ ] Save safe changed files to the existing backup branch and verify remote hashes; publish once after checks.
+- [ ] Verify published site/endpoints; prepare one PayPal order with idempotency without capture. Stripe embedded session deferred: available owner session lacks existing admin permission; hosted redirect checkout is not supported by the integration.
+
 ## Current request — Reversible GitHub snapshot (November 7, 2026)
 - [x] Inspect local state and existing GitHub repository without reconnecting or changing main.
 - [x] Record owner-confirmed database recovery and aggregate reads, separating data state from access rules.
-- [ ] Audit/export sanitized source, create backup branch through the existing connection, and verify remote blob hashes.
+- [x] Audit/export 304 sanitized files; backup branch audit/payment-safety-2026-11-07 saved at 88bc377f736af7cec6361622079fe0493fe639b9. GET verified all manifest hashes plus checkout-validation.ts, stripe.server.ts and report against local bytes; main unchanged.
 - [ ] Publication deferred to the next authorized stage; do not publish during this snapshot task.
 
 ## Current request — Payment safety audit (November 7, 2026)

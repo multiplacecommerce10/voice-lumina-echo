@@ -43,6 +43,7 @@ import { Route as AuthenticatedAdminClassesRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminCourseRouteImport } from './routes/_authenticated/admin.course'
 import { Route as AuthenticatedAdminEnrollmentsRouteImport } from './routes/_authenticated/admin.enrollments'
 import { Route as AuthenticatedAdminFoundationsRouteImport } from './routes/_authenticated/admin.foundations'
+import { Route as AuthenticatedAdminPaymentDiagnosticRouteImport } from './routes/_authenticated/admin.payment-diagnostic'
 import { Route as AuthenticatedAdminPortfoliosRouteImport } from './routes/_authenticated/admin.portfolios'
 import { Route as AuthenticatedAdminProgramsRouteImport } from './routes/_authenticated/admin.programs'
 import { Route as AuthenticatedAdminSlotsRouteImport } from './routes/_authenticated/admin.slots'
@@ -237,6 +238,12 @@ const AuthenticatedAdminFoundationsRoute =
     path: '/foundations',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminPaymentDiagnosticRoute =
+  AuthenticatedAdminPaymentDiagnosticRouteImport.update({
+    id: '/payment-diagnostic',
+    path: '/payment-diagnostic',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminPortfoliosRoute =
   AuthenticatedAdminPortfoliosRouteImport.update({
     id: '/portfolios',
@@ -378,6 +385,7 @@ export interface FileRoutesByFullPath {
   '/admin/course': typeof AuthenticatedAdminCourseRoute
   '/admin/enrollments': typeof AuthenticatedAdminEnrollmentsRoute
   '/admin/foundations': typeof AuthenticatedAdminFoundationsRoute
+  '/admin/payment-diagnostic': typeof AuthenticatedAdminPaymentDiagnosticRoute
   '/admin/portfolios': typeof AuthenticatedAdminPortfoliosRoute
   '/admin/programs': typeof AuthenticatedAdminProgramsRoute
   '/admin/slots': typeof AuthenticatedAdminSlotsRoute
@@ -429,6 +437,7 @@ export interface FileRoutesByTo {
   '/admin/course': typeof AuthenticatedAdminCourseRoute
   '/admin/enrollments': typeof AuthenticatedAdminEnrollmentsRoute
   '/admin/foundations': typeof AuthenticatedAdminFoundationsRoute
+  '/admin/payment-diagnostic': typeof AuthenticatedAdminPaymentDiagnosticRoute
   '/admin/portfolios': typeof AuthenticatedAdminPortfoliosRoute
   '/admin/programs': typeof AuthenticatedAdminProgramsRoute
   '/admin/slots': typeof AuthenticatedAdminSlotsRoute
@@ -484,6 +493,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/course': typeof AuthenticatedAdminCourseRoute
   '/_authenticated/admin/enrollments': typeof AuthenticatedAdminEnrollmentsRoute
   '/_authenticated/admin/foundations': typeof AuthenticatedAdminFoundationsRoute
+  '/_authenticated/admin/payment-diagnostic': typeof AuthenticatedAdminPaymentDiagnosticRoute
   '/_authenticated/admin/portfolios': typeof AuthenticatedAdminPortfoliosRoute
   '/_authenticated/admin/programs': typeof AuthenticatedAdminProgramsRoute
   '/_authenticated/admin/slots': typeof AuthenticatedAdminSlotsRoute
@@ -539,6 +549,7 @@ export interface FileRouteTypes {
     | '/admin/course'
     | '/admin/enrollments'
     | '/admin/foundations'
+    | '/admin/payment-diagnostic'
     | '/admin/portfolios'
     | '/admin/programs'
     | '/admin/slots'
@@ -590,6 +601,7 @@ export interface FileRouteTypes {
     | '/admin/course'
     | '/admin/enrollments'
     | '/admin/foundations'
+    | '/admin/payment-diagnostic'
     | '/admin/portfolios'
     | '/admin/programs'
     | '/admin/slots'
@@ -644,6 +656,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/course'
     | '/_authenticated/admin/enrollments'
     | '/_authenticated/admin/foundations'
+    | '/_authenticated/admin/payment-diagnostic'
     | '/_authenticated/admin/portfolios'
     | '/_authenticated/admin/programs'
     | '/_authenticated/admin/slots'
@@ -941,6 +954,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminFoundationsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/payment-diagnostic': {
+      id: '/_authenticated/admin/payment-diagnostic'
+      path: '/payment-diagnostic'
+      fullPath: '/admin/payment-diagnostic'
+      preLoaderRoute: typeof AuthenticatedAdminPaymentDiagnosticRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/portfolios': {
       id: '/_authenticated/admin/portfolios'
       path: '/portfolios'
@@ -1076,6 +1096,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminCourseRoute: typeof AuthenticatedAdminCourseRoute
   AuthenticatedAdminEnrollmentsRoute: typeof AuthenticatedAdminEnrollmentsRoute
   AuthenticatedAdminFoundationsRoute: typeof AuthenticatedAdminFoundationsRoute
+  AuthenticatedAdminPaymentDiagnosticRoute: typeof AuthenticatedAdminPaymentDiagnosticRoute
   AuthenticatedAdminPortfoliosRoute: typeof AuthenticatedAdminPortfoliosRoute
   AuthenticatedAdminProgramsRoute: typeof AuthenticatedAdminProgramsRoute
   AuthenticatedAdminSlotsRoute: typeof AuthenticatedAdminSlotsRoute
@@ -1088,6 +1109,8 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminCourseRoute: AuthenticatedAdminCourseRoute,
   AuthenticatedAdminEnrollmentsRoute: AuthenticatedAdminEnrollmentsRoute,
   AuthenticatedAdminFoundationsRoute: AuthenticatedAdminFoundationsRoute,
+  AuthenticatedAdminPaymentDiagnosticRoute:
+    AuthenticatedAdminPaymentDiagnosticRoute,
   AuthenticatedAdminPortfoliosRoute: AuthenticatedAdminPortfoliosRoute,
   AuthenticatedAdminProgramsRoute: AuthenticatedAdminProgramsRoute,
   AuthenticatedAdminSlotsRoute: AuthenticatedAdminSlotsRoute,

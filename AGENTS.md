@@ -15,3 +15,5 @@
 - Stripe checkout validates exact recurring catalog facts and the lead's recorded human approval/current legal consent before session creation; both providers reuse the same admission predicates to prevent bypasses.
 - Stripe webhook verification uses the SDK async secure verifier with finite timestamps and event/environment parity before processing; preserve the existing SDK/API pairing and both managed endpoints.
 - Lifecycle emails go through the durable notification_outbox (pending_notifications written with the state CAS, then drained); never send inline, never send in sandbox, never set or email passwords.
+- Stripe diagnostic markers are recognized only after signature verification and are audit-only before lifecycle/account/delivery work; unmarked course events retain their existing validation and processing.
+- Stripe account access uses the shared safe-access email builder: existing passwords are never changed and only newly created accounts receive a choose-password link.

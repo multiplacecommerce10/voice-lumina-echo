@@ -25,10 +25,10 @@ export const COURTESY_NOTE =
   "Special guest access: a one-time US$ 1.00 payment unlocks the Complete tier for 7 days from your confirmed payment. This is not a subscription and there is no automatic renewal or further charge.";
 
 /** Adds the truthful courtesy terms to the normal welcome email. */
-export function withCourtesyNote<T extends { bodyHtml: string; bodyText: string }>(draft: T): T {
+export function withCourtesyNote<T extends { bodyHtml: string; bodyText: string }>(draft: T, note: string = COURTESY_NOTE): T {
   const anchor = "Please keep this message as confirmation of your enrollment.";
   if (!draft.bodyText.includes(anchor) || !draft.bodyHtml.includes(anchor)) throw new Error("welcome template changed");
-  return { ...draft, bodyText: draft.bodyText.replace(anchor, `${COURTESY_NOTE}\n\n${anchor}`), bodyHtml: draft.bodyHtml.replace(anchor, `${COURTESY_NOTE}</p>\n<p style="margin:0 0 18px;">${anchor}`) };
+  return { ...draft, bodyText: draft.bodyText.replace(anchor, `${note}\n\n${anchor}`), bodyHtml: draft.bodyHtml.replace(anchor, `${note}</p>\n<p style="margin:0 0 18px;">${anchor}`) };
 }
 
 /** Never throws: payment recording must not depend on courtesy delivery. */
@@ -36,7 +36,7 @@ export async function afterDiagnosticPaid(db: any, inviteId: string) {
   try {
     const { data, error } = await db.rpc("grant_diagnostic_courtesy", { p_invite: inviteId });
     if (error) throw error;
-    if (data === "granted" || data === "already") {
+    if (data === "granted" || data === "existing" || data === "already") {
       const { runOutbox } = await import("./paypal-state.server");
       await runOutbox();
     }
@@ -47,14 +47,28 @@ export async function afterDiagnosticPaid(db: any, inviteId: string) {
   }
 }
 
+/** Resolves who/what to email from the invitation grant (form email), never from provider payer data. */
+export async function resolveCourtesyTarget(db: any, row: OutboxRow) {
+  const sub = row.subscription_id ?? "";
+  if (!sub.startsWith("diag:")) throw new Error("not a courtesy notification");
+  const { data: g, error } = await db.from("payment_diagnostic_grants")
+    .select("email, full_name, granted_at, existing_access").eq("invite_id", sub.slice(5)).maybeSingle();
+  if (error || !g || !g.granted_at) throw new Error("courtesy grant missing");
+  if (!g.existing_access) {
+    const { data: s } = await db.from("member_subscriptions").select("provider, courtesy_access")
+      .eq("stripe_subscription_id", sub).eq("environment", "live").maybeSingle();
+    if (!s || s.provider !== COURTESY_PROVIDER || s.courtesy_access !== true) throw new Error("courtesy row missing");
+  }
+  return { to: String(g.email).toLowerCase(), fullName: g.full_name as string | null, existing: g.existing_access === true };
+}
+
+export const EXISTING_ACCESS_NOTE =
+  "Special guest payment: your one-time US$ 1.00 payment is confirmed. You already have Complete access, which continues exactly as before — this payment does not add, extend or change your access period, and there is no automatic renewal or further charge.";
+
 export async function deliverCourtesy(row: OutboxRow): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: s, error } = await supabaseAdmin.from("member_subscriptions")
-    .select("email, full_name, provider, courtesy_access, current_period_end")
-    .eq("stripe_subscription_id", row.subscription_id).eq("environment", "live").maybeSingle();
-  if (error || !s || s.provider !== COURTESY_PROVIDER || s.courtesy_access !== true) throw new Error("courtesy row missing");
-  const to = (s.email ?? row.recipient ?? "").toLowerCase();
-  if (!to) throw new Error("no recipient");
+  const t = await resolveCourtesyTarget(supabaseAdmin, row);
+  const to = t.to; const s = { full_name: t.fullName };
   let draft: { subject: string; bodyHtml: string; bodyText: string };
   if (row.kind === "welcome_confirmation") {
     const { buildConfirmationEmail } = await import("./confirmation-email");
@@ -67,7 +81,7 @@ export async function deliverCourtesy(row: OutboxRow): Promise<void> {
       courseStartFormatted: formatClassInTimeZone(COURSE_START_UTC, "UTC").full,
       nextClassFormatted: formatClassInTimeZone(getNextClassAfter(new Date()), "UTC").full,
       membershipUrl: EMAIL_BRAND.membershipUrl,
-    }));
+    }), t.existing ? EXISTING_ACCESS_NOTE : COURTESY_NOTE);
   } else if (row.kind === "account_access") {
     const { prepareStripeAccountAccess } = await import("./stripe-account-access.server");
     // Existing accounts keep their password; only a newly created account gets a choose-password link.

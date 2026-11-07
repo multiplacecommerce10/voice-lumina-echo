@@ -2,6 +2,7 @@ import { getAccessToken, PAYPAL_API_BASE } from "./paypal.server";
 import { assertPayPalOrder, invitationValid, PAYPAL_DIAGNOSTIC_PAYEE, DIAGNOSTIC_ORIGIN, DIAGNOSTIC_PRICE_KEY } from "./private-diagnostic-rules";
 import { PAYMENT_DIAGNOSTIC, DIAGNOSTIC_LABEL } from "./payment-diagnostic";
 import { createStripeClient } from "./stripe.server";
+import { buildIntegrationIdentifier } from "./payments-helpers";
 
 function assertPrivateStripeSession(session: any, attempt: any) {
   if (session.livemode !== true || session.metadata?.payment_diagnostic !== PAYMENT_DIAGNOSTIC || session.metadata?.diagnostic_attempt !== attempt.id || session.mode !== "payment" || session.subscription || session.amount_total !== 100 || session.currency !== "usd" || session.ui_mode !== "embedded_page" || session.automatic_tax?.enabled === true || (session.total_details?.amount_tax ?? 0) !== 0 || (session.total_details?.amount_discount ?? 0) !== 0 || session.metadata?.lead_id || session.metadata?.tier || session.metadata?.package) throw new Error("Private Stripe payment facts invalid");
@@ -54,7 +55,7 @@ export async function diagnosticStart(db: any, token: string, provider: "stripe"
     const metadata = { payment_diagnostic: PAYMENT_DIAGNOSTIC, diagnostic_attempt: attempt.id };
     const expires = Math.min(Math.floor(Date.parse(invite.expires_at) / 1000), Math.floor(Date.parse(attempt.created_at) / 1000) + 3600);
     if (expires < Math.floor(Date.now() / 1000) + 1800) throw new Error("Invitation checkout window has expired");
-    const session = await stripe.checkout.sessions.create({ mode: "payment", ui_mode: "embedded_page", line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: 100, tax_behavior: "inclusive", product: productId } }], metadata, payment_intent_data: { metadata, description: DIAGNOSTIC_LABEL }, expires_at: expires, return_url: `${DIAGNOSTIC_ORIGIN}/private-payment?stripe_attempt=${attempt.id}` }, { idempotencyKey: `cv-diag-stripe-${attempt.id}` });
+    const session = await stripe.checkout.sessions.create({ mode: "payment", ui_mode: "embedded_page", integration_identifier: buildIntegrationIdentifier(), line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: 100, tax_behavior: "inclusive", product: productId } }], metadata, payment_intent_data: { metadata, description: DIAGNOSTIC_LABEL }, expires_at: expires, return_url: `${DIAGNOSTIC_ORIGIN}/private-payment?stripe_attempt=${attempt.id}` }, { idempotencyKey: `cv-diag-stripe-${attempt.id}` });
     assertPrivateStripeSession(session, attempt);
     await save(db, attempt.id, { provider_id: session.id, status: "open", capture_lock_until: null });
     return { id: attempt.id, provider, status: "open", approvalUrl: null, clientSecret: session.client_secret };

@@ -1,6 +1,8 @@
 # Roadmap — Email notifications (Taskade unified flow)
 
 ## Current request — Private post-form payer test
+- [x] Final Stripe review: use existing integration identifier helper in diagnosticStart; regression reproduced missing identifier, then 14 handler mocks/103 assertions and 11 webhook mocks/77 assertions passed, compilation OK.
+- [ ] Save final identifier revision to existing backup branch, publish with card and verify custom-domain final artifacts without checkout creation or invitation use.
 - [x] Add differentiated invitation-only offer card and explicit retirement guide preserving receipts; 14 private/11 webhook tests pass, GitHub a414882 verified, basic security checks pass, publication requested.
 - [ ] Confirm card deployment on custom domain — 05:23 UTC read still serves previous private asset without private-guest-card-v1; do not deliver invitation again until this new card is confirmed.
 - [x] Delivery gate confirmed at 05:20 UTC: custom-domain DOM v2/new JS fingerprint, exact offer, invited form/consent and both controls verified without checkout creation; returns use custom origin, SELECT 1 and unsigned webhooks pass.

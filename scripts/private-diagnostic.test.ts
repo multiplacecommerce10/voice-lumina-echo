@@ -44,6 +44,7 @@ test("cross-origin and missing-origin writes rejected", () => { expect(() => ass
 test("authorized Stripe is one-time 100 USD, no automatic tax, exact offer and isolated metadata", async () => {
   await diagnosticStart(db, token, "stripe"); expect(stripeCreates).toBe(1);
   expect(stripeParams.mode).toBe("payment"); expect(stripeParams.ui_mode).toBe("embedded_page");
+  expect(stripeParams.integration_identifier).toMatch(/^consciousvoice_sub_v2_[a-z]{8}$/);
   expect(stripeParams.line_items).toEqual([{ quantity: 1, price_data: { currency: "usd", unit_amount: 100, tax_behavior: "inclusive", product: "prod_fixture" } }]);
   expect(stripeParams.automatic_tax).toBeUndefined(); expect(stripeParams.subscription_data).toBeUndefined(); expect(stripeParams.customer).toBeUndefined();
   expect(stripeParams.payment_intent_data.description).toBe("Convidado especial — US$ 1");

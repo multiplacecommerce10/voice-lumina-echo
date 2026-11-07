@@ -1,5 +1,7 @@
 # Architecture rules
 
+- Shared enrollment birth dates use an isolated native-select control with a hidden ISO value and first-select error focus; the existing shared profile schema remains the validation authority so restored data and server payloads stay compatible.
+
 - Build the pending-enrollment list through the shared pending-enrollments query, explicitly including NULL sources; legacy and ordinary checkout leads otherwise disappear under SQL inequality filters.
 
 - Prebundle the router's isServer entry and seroval alongside React/router dependencies at preview startup to avoid mid-request dependency reoptimization and stale chunk failures.

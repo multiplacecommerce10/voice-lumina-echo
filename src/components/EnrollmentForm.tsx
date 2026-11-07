@@ -12,6 +12,7 @@ import {
 import { profileSchema, PROFILE_STORAGE_KEY, type EnrollmentProfile } from "@/lib/enrollment-profile";
 import { Button } from "@/components/ui/button";
 import { FlagIcon } from "@/components/ui/flag-icon";
+import { BirthDateControl } from "@/components/BirthDateControl";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -123,6 +124,7 @@ export function EnrollmentForm({ initialProfile, onComplete, embedded = false, d
     const dial = [...allCountries].sort((a, b) => b.dial.length - a.dial.length).find((c) => restoredProfile.phone?.startsWith(`${c.dial} `));
     if (dial) setDialIso(dial.iso2);
     for (const [key, value] of Object.entries(restoredProfile)) {
+      if (key === "birthDate") continue; // The controlled date selectors restore their own ISO value.
       const element = formRef.current.elements.namedItem(key);
       if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement) element.value = key === "phone" && dial ? String(value).slice(dial.dial.length).trim() : String(value ?? "");
     }
@@ -184,7 +186,8 @@ export function EnrollmentForm({ initialProfile, onComplete, embedded = false, d
     if (!checked.success) {
       setFieldErrors(Object.fromEntries(checked.error.issues.map((issue) => [String(issue.path[0]), issue.message])));
       setStatus("idle");
-      form.querySelector<HTMLElement>(`[name="${String(checked.error.issues[0]?.path[0])}"]`)?.focus();
+      const firstField = String(checked.error.issues[0]?.path[0]);
+      form.querySelector<HTMLElement>(firstField === "birthDate" ? '[id="birthDate"]' : `[name="${firstField}"]`)?.focus();
       return;
     }
     setFieldErrors({});
@@ -266,10 +269,7 @@ export function EnrollmentForm({ initialProfile, onComplete, embedded = false, d
               />
             </div>
             <div className={fieldErrors.birthDate ? "rounded-lg ring-2 ring-destructive/60 bg-destructive/5 p-2" : ""}>
-              <label className={labelCls} htmlFor="birthDate">
-                Date of birth *
-              </label>
-              <input id="birthDate" name="birthDate" type="date" required className={inputCls} />
+              <BirthDateControl initialValue={restoredProfile?.birthDate} error={fieldErrors.birthDate} />
             </div>
           </div>
 

@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { EnrollmentForm } from "@/components/EnrollmentForm";
 import { Button } from "@/components/ui/button";
-import { readPrivateInvitation, startPrivateDiagnostic, returnPrivatePayPal, readPrivateStripe } from "@/lib/private-diagnostic.functions";
+import { readPrivateInvitation, savePrivateDiagnosticForm, startPrivateDiagnostic, returnPrivatePayPal, readPrivateStripe } from "@/lib/private-diagnostic.functions";
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
 import { getStripe, getStripeEnvironment } from "@/lib/stripe";
 import { DIAGNOSTIC_LABEL } from "@/lib/payment-diagnostic";
@@ -21,31 +21,55 @@ export const Route = createFileRoute("/private-payment")({
   ] }), component: PrivatePayment,
 });
 function PrivatePayment() {
+  const [token, setToken] = useState("");
+  const routeHash = useRouterState({ select: state => state.location.hash });
+  useEffect(() => {
+    function refresh() {
+      const fragment = new URLSearchParams((window.location.hash || routeHash || "").replace(/^#/, "")).get("invite");
+      const previous = sessionStorage.getItem("private-diagnostic-invite") || "";
+      const value = fragment ?? previous;
+      if (fragment !== null) {
+        if (fragment !== previous) {
+          sessionStorage.removeItem("private-diagnostic-stripe");
+          sessionStorage.removeItem("private-diagnostic-return");
+        }
+        sessionStorage.setItem("private-diagnostic-invite", value);
+        history.replaceState(null, "", window.location.pathname + (fragment !== previous ? "" : window.location.search));
+      }
+      setToken(value);
+    }
+    refresh(); window.addEventListener("hashchange", refresh);
+    return () => window.removeEventListener("hashchange", refresh);
+  }, [routeHash]);
+  return <PrivatePaymentSession key={token} token={token} />;
+}
+function PrivatePaymentSession({ token }: { token: string }) {
   const search = Route.useSearch();
   const read = useServerFn(readPrivateInvitation), start = useServerFn(startPrivateDiagnostic), returned = useServerFn(returnPrivatePayPal);
+  const saveForm = useServerFn(savePrivateDiagnosticForm);
   const readStripe = useServerFn(readPrivateStripe);
   const [stripeAttempt, setStripeAttempt] = useState(""), [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [token, setToken] = useState(""), [profile, setProfile] = useState<EnrollmentProfile | null>(null);
+  const [profile, setProfile] = useState<EnrollmentProfile | null>(null);
   const [invite, setInvite] = useState<Awaited<ReturnType<typeof readPrivateInvitation>> | null>(null);
   const [consent, setConsent] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState("");
   const [payment, setPayment] = useState<{ status?: string; approved?: boolean } | null>(null);
   const [returnInput, setReturnInput] = useState<{ attempt: string; state: string; order: string } | null>(null);
   useEffect(() => {
-    const fragment = new URLSearchParams(window.location.hash.slice(1)).get("invite");
-    const value = fragment || sessionStorage.getItem("private-diagnostic-invite") || "";
-    if (fragment) { sessionStorage.setItem("private-diagnostic-invite", fragment); history.replaceState(null, "", window.location.pathname + window.location.search); }
-    setToken(value);
-    if (search.stripe_attempt) { setStripeAttempt(search.stripe_attempt); sessionStorage.setItem("private-diagnostic-stripe", search.stripe_attempt); history.replaceState(null, "", window.location.pathname); }
-    else if (!search.attempt) setStripeAttempt(sessionStorage.getItem("private-diagnostic-stripe") ?? "");
-    if (search.attempt && search.state && search.token) {
+    if (!token) return;
+    const storageKey = (kind: string) => `private-diagnostic-${kind}:${token}`;
+    if (search.stripe_attempt && window.location.search) { setStripeAttempt(search.stripe_attempt); sessionStorage.setItem(storageKey("stripe"), search.stripe_attempt); history.replaceState(null, "", window.location.pathname); }
+    else if (!search.attempt) setStripeAttempt(sessionStorage.getItem(storageKey("stripe")) ?? "");
+    if (search.attempt && search.state && search.token && window.location.search) {
       const input = { attempt: search.attempt, state: search.state, order: search.token };
-      sessionStorage.setItem("private-diagnostic-return", JSON.stringify(input));
+      sessionStorage.setItem(storageKey("return"), JSON.stringify(input));
       setReturnInput(input);
       history.replaceState(null, "", window.location.pathname);
-    } else { try { const saved = sessionStorage.getItem("private-diagnostic-return"); if (saved) setReturnInput(JSON.parse(saved)); } catch { /* no return */ } }
+    } else { try { const saved = sessionStorage.getItem(storageKey("return")); if (saved) setReturnInput(JSON.parse(saved)); } catch { /* no return */ } }
   }, []);
   useEffect(() => { if (!token) return;
-    read({ data: { token } }).then(setInvite).catch(() => setInvite({ valid: false, error: "Invalid, revoked or expired private invitation." }));
+    let active = true;
+    read({ data: { token } }).then(r => { if (active) setInvite(r); }).catch(() => { if (active) setInvite({ valid: false, error: "Invitation verification is temporarily unavailable. Please try again." }); });
+    return () => { active = false; };
   }, [token]);
   useEffect(() => { if (!token || !returnInput || !invite?.valid) return;
     returned({ data: { token, ...returnInput, action: search.cancelled ? "cancel" : "read", confirm: false } }).then(r => { if ("error" in r) setError(r.error ?? "Payment verification unavailable"); else setPayment(r); }).catch(() => setError("Payment verification unavailable."));
@@ -57,7 +81,7 @@ function PrivatePayment() {
   async function choose(provider: "stripe" | "paypal") {
     if (!profile || !consent || busy) return; setBusy(true); setError("");
     try { const result = await start({ data: { token, profile, consent: true, provider } });
-      if ("error" in result) setError(result.error); else if (result.approvalUrl) window.location.assign(result.approvalUrl); else { setPayment({ status: result.status }); if (result.provider === "stripe") { setStripeAttempt(result.id); sessionStorage.setItem("private-diagnostic-stripe", result.id); setClientSecret(result.clientSecret); } }
+      if ("error" in result) setError(result.error); else if (result.approvalUrl) window.location.assign(result.approvalUrl); else { setPayment({ status: result.status }); if (result.provider === "stripe") { setStripeAttempt(result.id); sessionStorage.setItem(`private-diagnostic-stripe:${token}`, result.id); setClientSecret(result.clientSecret); } }
     } catch { setError("Unable to open this test payment. Do not create another order."); } finally { setBusy(false); }
   }
   async function pay() {
@@ -65,7 +89,7 @@ function PrivatePayment() {
     try { const result = await returned({ data: { token, ...returnInput, action: "capture", confirm: true } }); if ("error" in result) setError(result.error ?? "Payment verification unavailable"); else setPayment(result); }
     catch { setError("Payment verification pending. Do not submit another payment."); } finally { setBusy(false); }
   }
-  return <main className="mx-auto max-w-3xl px-5 py-10" data-diagnostic-version={PRIVATE_DIAGNOSTIC_VERSION}>
+  return <main className="mx-auto max-w-3xl px-5 py-10" data-diagnostic-version={PRIVATE_DIAGNOSTIC_VERSION} data-diagnostic-form-storage="private-full-profile-v1" data-diagnostic-form-saved={profile ? "true" : "false"}>
     <img src={logo} alt="Tecendo Som" className="h-16 w-16 object-contain mb-5" />
     {!invite?.valid && <h1 className="font-display text-3xl text-foreground">Private payment invitation</h1>}
     {!token ? <p role="alert" className="mt-8">A private invitation is required.</p> : !invite ? <p className="mt-8">Checking invitation…</p> : !invite.valid ? <p role="alert" className="mt-8">{invite.error}</p> : <>
@@ -74,20 +98,24 @@ function PrivatePayment() {
         <div className="mb-4 flex items-center gap-3 text-secondary"><TicketCheck className="h-6 w-6 shrink-0" aria-hidden="true" /><span className="text-sm font-semibold">Private guest · Tecendo Som</span></div>
         <h1 className="font-display text-3xl break-words tracking-normal">{DIAGNOSTIC_LABEL}</h1>
         <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1"><span className="font-display text-5xl tracking-normal">US$ 1</span><span className="text-sm text-muted-foreground">One payment per provider · No renewal</span></div>
-        <p className="mt-5 text-muted-foreground">You are the payer. Tecendo Som receives one real US$1 payment per selected provider. After the first confirmed payment, you receive one 7-day Complete courtesy access to the members area and the welcome and account access emails, once, at the email you enter in the form (not your provider account email). A second provider payment does not add or extend access. No subscription or renewal. Provider receipts and processing fees may apply; your total is US$1.</p>
+        <p className="mt-5 text-muted-foreground">You are the payer. Tecendo Som receives one real US$1 payment per selected provider. With your consent, all form answers are saved privately before checkout. After the first confirmed payment, you receive one 7-day Complete courtesy access to the members area and the welcome and account access emails, once, at the email you enter in the form (not your provider account email). A second provider payment does not add or extend access. No subscription or renewal. Provider receipts and processing fees may apply; your total is US$1.</p>
         <p className="mt-5 border-t border-border pt-4 text-sm text-muted-foreground">This invitation expires {new Date(invite.expiresAt ?? "").toLocaleString()}.</p>
       </article>
       {error && <p role="alert" className="my-5 text-destructive">{error}</p>}
       {stripeAttempt ? <section className="mt-8 border-t border-border pt-6"><h2 className="text-xl">Stripe — {DIAGNOSTIC_LABEL}</h2>
         {payment?.status === "paid" ? <p className="my-4">US$1 payment confirmed. Your 7-day courtesy access and welcome emails are on the way.</p> : clientSecret && liveStripe ? <EmbeddedCheckoutProvider stripe={getStripe()} options={{ clientSecret }}><EmbeddedCheckout /></EmbeddedCheckoutProvider> : <p className="my-4">{payment?.status === "expired" ? "Checkout expired. No payment confirmed." : "Payment verification pending."}</p>}
-        <Button className="mt-5" variant="outline" onClick={() => { setStripeAttempt(""); sessionStorage.removeItem("private-diagnostic-stripe"); setClientSecret(null); setPayment(null); read({ data: { token } }).then(setInvite); }}>Other provider</Button>
+        <Button className="mt-5" variant="outline" onClick={() => { setStripeAttempt(""); sessionStorage.removeItem(`private-diagnostic-stripe:${token}`); setClientSecret(null); setPayment(null); read({ data: { token } }).then(setInvite); }}>Other provider</Button>
       </section> : returnInput ? <section className="mt-8 border-t border-border pt-6"><h2 className="text-xl">PayPal payment confirmation</h2>
         <p className="my-4">{payment?.status === "paid" ? "US$1 payment confirmed. Your 7-day courtesy access and welcome emails are on the way." : payment?.status === "cancelled" ? "Payment cancelled. No payment was confirmed." : payment?.approved ? "PayPal approval verified. Confirm the real US$1 payment to Tecendo Som below." : "Payment is not confirmed. Awaiting verification."}</p>
         {payment?.approved && <Button disabled={busy} onClick={pay}>{busy ? "Verifying…" : "Pay US$1"}</Button>}
-        <Button className="mt-5" variant="outline" onClick={() => { setReturnInput(null); sessionStorage.removeItem("private-diagnostic-return"); setPayment(null); read({ data: { token } }).then(setInvite); }}>Other provider</Button>
-      </section> : !profile ? <div className="mt-8"><EnrollmentForm embedded diagnostic onComplete={setProfile} /></div> : <section className="mt-8 border-t border-border pt-6">
+        <Button className="mt-5" variant="outline" onClick={() => { setReturnInput(null); sessionStorage.removeItem(`private-diagnostic-return:${token}`); setPayment(null); read({ data: { token } }).then(setInvite); }}>Other provider</Button>
+      </section> : !profile ? <div className="mt-8"><EnrollmentForm embedded diagnostic onComplete={async values => {
+        const result = await saveForm({ data: { token, profile: values, consent: true } });
+        if ("error" in result) throw new Error(result.error);
+        setProfile(values);
+      }} /></div> : <section className="mt-8 border-t border-border pt-6">
         <h2 className="text-xl">Choose your test payment</h2>
-        <label className="flex items-start gap-3 my-5"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>I authorize one real US$1 diagnostic payment to Tecendo Som for each provider I choose. This is not admission or access to the course. My form answers are not saved.</span></label>
+        <label className="flex items-start gap-3 my-5"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>My answers have been saved privately with my storage consent. I authorize one real US$1 payment to Tecendo Som per selected provider. The first confirmed payment provides Complete courtesy access for 7 days and welcome and account access emails once to my form email. No subscription or renewal; a second provider payment does not add or extend access.</span></label>
         <div className="flex flex-wrap gap-4"><Button disabled={busy || !consent || !liveStripe || invite.attempts?.some(a => a.provider === "stripe" && ["paid", "cancelled", "failed", "expired"].includes(a.status))} onClick={() => choose("stripe")}>Continue to Stripe — US$1</Button><Button disabled={busy || !consent || invite.attempts?.some(a => a.provider === "paypal" && ["paid", "cancelled", "failed", "expired"].includes(a.status))} onClick={() => choose("paypal")}>{busy ? "Preparing…" : "Continue to PayPal — US$1"}</Button></div>
         <p className="mt-5 text-sm text-muted-foreground">{invite.taxNotice}{!liveStripe && " Live Stripe checkout is available on the published site only."}</p>
         <ul className="mt-5 text-sm">{invite.attempts?.map(a => <li key={a.id}>{a.provider}: {a.status}</li>)}</ul>

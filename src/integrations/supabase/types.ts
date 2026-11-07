@@ -745,6 +745,8 @@ export type Database = {
           created_at: string
           email: string
           existing_access: boolean
+          form_answers: Json | null
+          form_saved_at: string | null
           full_name: string | null
           granted_at: string | null
           invite_id: string
@@ -757,6 +759,8 @@ export type Database = {
           created_at?: string
           email: string
           existing_access?: boolean
+          form_answers?: Json | null
+          form_saved_at?: string | null
           full_name?: string | null
           granted_at?: string | null
           invite_id: string
@@ -769,6 +773,8 @@ export type Database = {
           created_at?: string
           email?: string
           existing_access?: boolean
+          form_answers?: Json | null
+          form_saved_at?: string | null
           full_name?: string | null
           granted_at?: string | null
           invite_id?: string
@@ -1378,6 +1384,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      save_private_diagnostic_form: {
+        Args: { p_answers: Json; p_hash: string; p_version: string }
+        Returns: string
       }
       taken_slot_ids: { Args: never; Returns: string[] }
     }

@@ -2,13 +2,14 @@ import { z } from "zod";
 import { profileSchema } from "./enrollment-profile";
 import { PAYMENT_DIAGNOSTIC } from "./payment-diagnostic";
 
-export const PRIVATE_DIAGNOSTIC_VERSION = "private-guest-complete7d-consent-retry-v3-20261107";
+export const PRIVATE_DIAGNOSTIC_VERSION = "private-guest-complete7d-saved-form-v4-20261107";
 export const DIAGNOSTIC_ORIGIN = "https://consciousvoice.tecendosom.com";
 export const PAYPAL_DIAGNOSTIC_PAYEE = "HNX3W9XUAPL7Y";
 export const DIAGNOSTIC_TAX_NOTICE = "One real US$1 payment. Automatic tax calculation is off for this private test, as authorized by the owner. This does not establish a tax exemption.";
 export const DIAGNOSTIC_PRICE_KEY = "conscious_voice_private_guest_usd1";
 export const invitationTokenSchema = z.string().regex(/^[a-f0-9]{64}$/);
-export const diagnosticFormSchema = z.object({ token: invitationTokenSchema, profile: profileSchema, consent: z.literal(true), provider: z.enum(["stripe", "paypal"]) });
+export const diagnosticSaveSchema = z.object({ token: invitationTokenSchema, profile: profileSchema, consent: z.literal(true) });
+export const diagnosticFormSchema = diagnosticSaveSchema.extend({ provider: z.enum(["stripe", "paypal"]) });
 export function invitationValid(invite: { expires_at: string; revoked_at: string | null } | null, now = Date.now()) {
   return !!invite && !invite.revoked_at && Number.isFinite(Date.parse(invite.expires_at)) && Date.parse(invite.expires_at) > now;
 }

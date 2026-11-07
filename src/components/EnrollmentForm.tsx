@@ -22,7 +22,7 @@ const musicLevels = [
   "Advanced — performer / teacher / professional",
 ];
 
-export function EnrollmentForm({ initialProfile, onComplete, embedded = false, diagnostic = false }: { initialProfile?: Partial<EnrollmentProfile>; onComplete?: (profile: EnrollmentProfile) => void; embedded?: boolean; diagnostic?: boolean }) {
+export function EnrollmentForm({ initialProfile, onComplete, embedded = false, diagnostic = false }: { initialProfile?: Partial<EnrollmentProfile>; onComplete?: (profile: EnrollmentProfile) => void | Promise<void>; embedded?: boolean; diagnostic?: boolean }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [restoredProfile, setRestoredProfile] = useState(initialProfile);
@@ -34,6 +34,7 @@ export function EnrollmentForm({ initialProfile, onComplete, embedded = false, d
   const submit = useServerFn(submitEnrollment);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState<string>("");
+  const [storageConsent, setStorageConsent] = useState(false);
 
   // Loaded lazily in the browser only: the country/city dataset is far too
   // large to ship inside the server bundle.
@@ -187,7 +188,12 @@ export function EnrollmentForm({ initialProfile, onComplete, embedded = false, d
       return;
     }
     setFieldErrors({});
-    if (onComplete) { setStatus("idle"); onComplete(checked.data); return; }
+    if (onComplete) {
+      if (diagnostic && !storageConsent) { setStatus("error"); setErrorMsg("Please consent to storing your private test answers before continuing."); return; }
+      try { await onComplete(checked.data); setStatus("idle"); }
+      catch (error) { setStatus("error"); setErrorMsg(error instanceof Error ? error.message : "Your answers could not be saved. No payment was started."); }
+      return;
+    }
     if (diagnostic) { setStatus("error"); setErrorMsg("Private test unavailable."); return; }
     try {
       await submit({ data: payload });
@@ -535,16 +541,17 @@ export function EnrollmentForm({ initialProfile, onComplete, embedded = false, d
             </div>
           )}
 
+          {diagnostic && <label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={storageConsent} onChange={e => setStorageConsent(e.target.checked)} aria-label="Consent to private answer storage" /><span>I consent to Tecendo Som privately storing all my form answers and this consent when I select “Continue with these details,” before payment, for this private guest test. My form email will receive the welcome and account access emails after the first confirmed US$1 payment. The Complete courtesy lasts 7 days from that payment, with no renewal; a second provider payment does not add or extend access.</span></label>}
           <div className="flex flex-col items-center gap-3 pt-2">
             <Button
               type="submit"
-              disabled={status === "submitting"}
+              disabled={status === "submitting" || (diagnostic && !storageConsent)}
               className="w-full sm:w-auto px-10 py-4 rounded-full bg-gradient-to-r from-primary to-[oklch(0.65_0.20_45)] text-primary-foreground font-semibold shadow-glow-gold hover:scale-[1.02] transition-transform disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {status === "submitting" ? "Sending…" : embedded ? "Continue with these details" : "Submit"}
             </Button>
             <p className="text-xs text-muted-foreground/80 text-center max-w-md">
-              {diagnostic ? "Only your name and email are kept for this private test, to send your welcome and courtesy access. Other answers are not saved." : "Your information is kept private and used only to welcome and prepare you for the course."}
+              {diagnostic ? "All your answers are saved privately before checkout. Saving does not create an account, grant access or send emails; those actions require confirmed payment." : "Your information is kept private and used only to welcome and prepare you for the course."}
             </p>
           </div>
         </form>

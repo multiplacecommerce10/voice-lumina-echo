@@ -1,4 +1,4 @@
-import { PRIVATE_DIAGNOSTIC_VERSION } from "./private-diagnostic-rules";
+import type { EnrollmentProfile } from "./enrollment-profile";
 import { getAccessToken, PAYPAL_API_BASE } from "./paypal.server";
 import { assertPayPalOrder, invitationValid, PAYPAL_DIAGNOSTIC_PAYEE, DIAGNOSTIC_ORIGIN, DIAGNOSTIC_PRICE_KEY } from "./private-diagnostic-rules";
 import { PAYMENT_DIAGNOSTIC, DIAGNOSTIC_LABEL } from "./payment-diagnostic";
@@ -26,7 +26,8 @@ export async function hashDiagnosticToken(token: string) {
 export function newDiagnosticToken() { return Array.from(crypto.getRandomValues(new Uint8Array(32)), n => n.toString(16).padStart(2, "0")).join(""); }
 export async function diagnosticInvite(db: any, token: string) {
   const { data, error } = await db.from("payment_diagnostic_invites").select("id,expires_at,revoked_at").eq("token_hash", await hashDiagnosticToken(token)).maybeSingle();
-  if (error || !invitationValid(data)) throw new Error("Invalid, revoked or expired invitation");
+  if (error) throw new Error("Invitation verification is temporarily unavailable.");
+  if (!invitationValid(data)) throw new Error("Invalid, revoked or expired invitation");
   return data as { id: string; expires_at: string; revoked_at: string | null };
 }
 async function paypal(path: string, method = "GET", body?: unknown, requestId?: string) {
@@ -39,10 +40,10 @@ async function save(db: any, id: string, fields: Record<string, unknown>) {
   const { error } = await db.from("payment_diagnostic_attempts").update({ ...fields, updated_at: new Date().toISOString() }).eq("id", id);
   if (error) throw new Error("Unable to save payment verification; do not retry with a different order");
 }
-export async function diagnosticStart(db: any, token: string, provider: "stripe" | "paypal", profile?: { fullName: string; email: string }) {
+export async function diagnosticStart(db: any, token: string, provider: "stripe" | "paypal", profile?: EnrollmentProfile) {
   const invite = await diagnosticInvite(db, token);
   if (!profile) throw new Error("Complete the private enrollment form first");
-  { const { recordDiagnosticProfile } = await import("./private-diagnostic-grant.server"); await recordDiagnosticProfile(db, invite.id, profile, PRIVATE_DIAGNOSTIC_VERSION); }
+  { const { requireSavedDiagnosticForm } = await import("./private-diagnostic-form.server"); await requireSavedDiagnosticForm(db, invite.id, profile); }
   const { data, error } = await db.rpc("reserve_payment_diagnostic", { p_hash: await hashDiagnosticToken(token), p_provider: provider });
   const attempt = data?.[0];
   if (error || !attempt || attempt.invite_id !== invite.id) throw new Error("Unable to reserve this test");

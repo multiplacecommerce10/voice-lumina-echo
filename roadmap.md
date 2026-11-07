@@ -2,11 +2,11 @@
 
 ## Current request — Private post-form payer test
 - [x] Apply owner's explicit no-automatic-tax instruction and exact private offer name; isolated embedded Stripe after form/provider choice, one-time catalog separate from course.
-- [ ] Complete updated regressions, safe GitHub backup and authorized publication/version check.
+- [x] Updated regressions passed, nine GitHub blobs verified, main preserved, publication requested; live diagnostic catalog is one_time USD 100.
 - [x] Build restricted invitations, service-only diagnostic state, isolated shared form and PayPal payer-confirmed capture; Stripe creation blocked on tax.
 - [x] Test invalid/expired/replayed/concurrent requests, provider facts and absence of course side effects; browser verified through consent without starting payment.
 - [x] Verify all 18 safe changed/new GitHub blobs, preserve main, request publication once and generate one 24-hour private invitation without financial objects.
-- [ ] Confirm deployment — live private route remains 404 after requested publication; invited form verified locally only. Do not present live payment as ready.
+- [ ] Confirm latest deployment — live private route now 200 and valid invitation renders form, but DOM still v1 rather than updated v2. Stripe/name update not yet confirmed.
 - [x] Owner authorized diagnostic without automatic tax at 05:14 UTC; no tax exemption inferred and course tax handling unchanged.
 
 ## Current request — USD 1 live diagnostics (November 7, 2026)

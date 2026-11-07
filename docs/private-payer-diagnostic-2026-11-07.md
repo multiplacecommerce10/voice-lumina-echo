@@ -3,11 +3,19 @@
 The mother is the payer; Tecendo Som is the merchant. This is not course admission. No pedagogical approval, account creation, membership, course emails, marketing or abandoned-cart recovery runs in this path. The private diagnostic product/one-time price was registered in the managed test catalog for publication sync; no checkout sessions, PayPal orders or captures were created during implementation of this update.
 
 ## Private access and data
+- Differentiated guest-offer card is rendered only after server validation of an unexpired, unrevoked invitation. It does not appear on public pricing. No automatic global retirement follows the first payment: one Stripe and one PayPal payment remain independently permitted.
 - `/private-payment` requires a 256-bit invitation supplied in the URL fragment, removed from the address after loading and held in same-origin session storage for PayPal return. Tokens never appear in this report, source or GitHub.
 - Database stores SHA-256 invitation hash, expiry and revocation only. Invitations expire in 24 hours and can be revoked by setting `revoked_at` through the privileged backend. They confer no admin rights.
 - The exact shared enrollment fields and schema are reused. All answers are validated in memory, not stored in any table or browser profile cache, and never submitted to normal leads.
 - Service-only tables and RPCs have explicit grants, RLS, no anon/authenticated access. Each invitation/provider has one unique reserved attempt. Atomic creation/capture claims and stable provider idempotency keys prevent concurrent duplicates. A failed creation can only retry the same key within one hour; no indefinite recreation.
 - Minimal state: consent version/time, validation time, provider/order identifiers, status and reconciliation evidence. No payer PII retained by the app. Invitation/return state can be removed after expiry; provider payment evidence should be retained only as needed for reconciliation. No automated financial-evidence deletion was introduced.
+
+## Simple retirement after both tests — do not execute now
+1. Read diagnostic attempts for the intended invitation and confirm one Stripe **paid** and one PayPal **paid**, with provider receipt identifiers. Pending/approved/cancelled is not paid. The owner explicitly decides when to retire; no first-payment global switch exists.
+2. Through privileged backend access, set **only that invitation's** `revoked_at` to the current UTC timestamp. Existing expiry already rejects new starts/returns/captures through the invitation server guard. No privilege or financial row is deleted. The UI stops rendering the guest card on the next invitation validation/reload.
+3. If Stripe checkout was already open, invitation revocation alone does not cancel that provider-hosted session. Reconcile first and expire any still-open diagnostic session through the provider, using its exact stored identifier and explicit owner authorization; never cancel course subscriptions or refund paid transactions as retirement.
+4. Archive/deactivate **only** the diagnostic one-time Stripe price/product (lookup keys above) via managed catalog/provider controls, preserving objects and receipts. PayPal has no diagnostic subscription plan to remove. Never alter course pricing or subscriptions.
+5. Optional full visual removal: remove the private guest-offer article from this private route and publish once, then verify the custom domain. Keep the diagnostic webhook verification/status reconciliation and all attempts/events/provider ids/capture ids/paid timestamps for audit. Never delete financial evidence.
 
 ## PayPal
 - A new live CAPTURE order for exactly USD 1.00 is created only after the valid form, consent and payer click. The previously prepared order is not reused or captured.

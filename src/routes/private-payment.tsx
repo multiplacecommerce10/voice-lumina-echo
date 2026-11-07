@@ -10,6 +10,7 @@ import { DIAGNOSTIC_LABEL } from "@/lib/payment-diagnostic";
 import { PRIVATE_DIAGNOSTIC_VERSION } from "@/lib/private-diagnostic-rules";
 import type { EnrollmentProfile } from "@/lib/enrollment-profile";
 import logo from "@/assets/tecendo-som-logo.png";
+import { TicketCheck } from "lucide-react";
 
 export const Route = createFileRoute("/private-payment")({
   validateSearch: (s: Record<string, unknown>) => ({ attempt: typeof s.attempt === "string" ? s.attempt : "", stripe_attempt: typeof s.stripe_attempt === "string" ? s.stripe_attempt : "", state: typeof s.state === "string" ? s.state : "", token: typeof s.token === "string" ? s.token : "", cancelled: s.cancelled === "1" }),
@@ -66,10 +67,16 @@ function PrivatePayment() {
   }
   return <main className="mx-auto max-w-3xl px-5 py-10" data-diagnostic-version={PRIVATE_DIAGNOSTIC_VERSION}>
     <img src={logo} alt="Tecendo Som" className="h-16 w-16 object-contain mb-5" />
-    <h1 className="font-display text-3xl text-foreground">{DIAGNOSTIC_LABEL}</h1>
-    <p className="mt-4 text-muted-foreground">You are the payer. Tecendo Som receives one real US$1 payment per selected provider. No renewal, course access, enrollment, account creation or course emails. Provider receipts and processing fees may apply; your total is US$1.</p>
+    {!invite?.valid && <h1 className="font-display text-3xl text-foreground">Private payment invitation</h1>}
     {!token ? <p role="alert" className="mt-8">A private invitation is required.</p> : !invite ? <p className="mt-8">Checking invitation…</p> : !invite.valid ? <p role="alert" className="mt-8">{invite.error}</p> : <>
-      <p className="mt-4 text-sm text-muted-foreground">This invitation expires {new Date(invite.expiresAt ?? "").toLocaleString()}.</p>
+      <article aria-label="Private guest offer" data-offer-version="private-guest-card-v1" className="relative overflow-hidden rounded-lg border border-secondary bg-card p-5 sm:p-7 text-card-foreground">
+        <div className="absolute inset-x-0 top-0 h-1 bg-secondary" aria-hidden="true" />
+        <div className="mb-4 flex items-center gap-3 text-secondary"><TicketCheck className="h-6 w-6 shrink-0" aria-hidden="true" /><span className="text-sm font-semibold">Private guest · Tecendo Som</span></div>
+        <h1 className="font-display text-3xl break-words tracking-normal">{DIAGNOSTIC_LABEL}</h1>
+        <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1"><span className="font-display text-5xl tracking-normal">US$ 1</span><span className="text-sm text-muted-foreground">One payment per provider · No renewal</span></div>
+        <p className="mt-5 text-muted-foreground">You are the payer. Tecendo Som receives one real US$1 payment per selected provider. No course access, enrollment, account creation or course emails. Provider receipts and processing fees may apply; your total is US$1.</p>
+        <p className="mt-5 border-t border-border pt-4 text-sm text-muted-foreground">This invitation expires {new Date(invite.expiresAt ?? "").toLocaleString()}.</p>
+      </article>
       {error && <p role="alert" className="my-5 text-destructive">{error}</p>}
       {stripeAttempt ? <section className="mt-8 border-t border-border pt-6"><h2 className="text-xl">Stripe — {DIAGNOSTIC_LABEL}</h2>
         {payment?.status === "paid" ? <p className="my-4">US$1 payment confirmed. No course access was granted.</p> : clientSecret && liveStripe ? <EmbeddedCheckoutProvider stripe={getStripe()} options={{ clientSecret }}><EmbeddedCheckout /></EmbeddedCheckoutProvider> : <p className="my-4">{payment?.status === "expired" ? "Checkout expired. No payment confirmed." : "Payment verification pending."}</p>}

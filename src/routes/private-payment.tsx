@@ -15,8 +15,8 @@ import { TicketCheck } from "lucide-react";
 export const Route = createFileRoute("/private-payment")({
   validateSearch: (s: Record<string, unknown>) => ({ attempt: typeof s.attempt === "string" ? s.attempt : "", stripe_attempt: typeof s.stripe_attempt === "string" ? s.stripe_attempt : "", state: typeof s.state === "string" ? s.state : "", token: typeof s.token === "string" ? s.token : "", cancelled: s.cancelled === "1" }),
   head: () => ({ meta: [
-    { title: "Private payer test | Tecendo Som" }, { name: "description", content: "Private single-payment diagnostic. No course enrollment or access." },
-    { property: "og:title", content: "Private payer test | Tecendo Som" }, { property: "og:description", content: "Private single-payment diagnostic. No course enrollment or access." },
+    { title: "Private payer test | Tecendo Som" }, { name: "description", content: "Private one-time special guest payment with a 7-day courtesy access." },
+    { property: "og:title", content: "Private payer test | Tecendo Som" }, { property: "og:description", content: "Private one-time special guest payment with a 7-day courtesy access." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex,nofollow,noarchive" }, { name: "referrer", content: "no-referrer" },
   ] }), component: PrivatePayment,
 });
@@ -74,15 +74,15 @@ function PrivatePayment() {
         <div className="mb-4 flex items-center gap-3 text-secondary"><TicketCheck className="h-6 w-6 shrink-0" aria-hidden="true" /><span className="text-sm font-semibold">Private guest · Tecendo Som</span></div>
         <h1 className="font-display text-3xl break-words tracking-normal">{DIAGNOSTIC_LABEL}</h1>
         <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1"><span className="font-display text-5xl tracking-normal">US$ 1</span><span className="text-sm text-muted-foreground">One payment per provider · No renewal</span></div>
-        <p className="mt-5 text-muted-foreground">You are the payer. Tecendo Som receives one real US$1 payment per selected provider. No course access, enrollment, account creation or course emails. Provider receipts and processing fees may apply; your total is US$1.</p>
+        <p className="mt-5 text-muted-foreground">You are the payer. Tecendo Som receives one real US$1 payment per selected provider. After the first confirmed payment, you receive one 7-day Complete courtesy access to the members area and the welcome and account access emails, once, at the email you enter in the form (not your provider account email). A second provider payment does not add or extend access. No subscription or renewal. Provider receipts and processing fees may apply; your total is US$1.</p>
         <p className="mt-5 border-t border-border pt-4 text-sm text-muted-foreground">This invitation expires {new Date(invite.expiresAt ?? "").toLocaleString()}.</p>
       </article>
       {error && <p role="alert" className="my-5 text-destructive">{error}</p>}
       {stripeAttempt ? <section className="mt-8 border-t border-border pt-6"><h2 className="text-xl">Stripe — {DIAGNOSTIC_LABEL}</h2>
-        {payment?.status === "paid" ? <p className="my-4">US$1 payment confirmed. No course access was granted.</p> : clientSecret && liveStripe ? <EmbeddedCheckoutProvider stripe={getStripe()} options={{ clientSecret }}><EmbeddedCheckout /></EmbeddedCheckoutProvider> : <p className="my-4">{payment?.status === "expired" ? "Checkout expired. No payment confirmed." : "Payment verification pending."}</p>}
+        {payment?.status === "paid" ? <p className="my-4">US$1 payment confirmed. Your 7-day courtesy access and welcome emails are on the way.</p> : clientSecret && liveStripe ? <EmbeddedCheckoutProvider stripe={getStripe()} options={{ clientSecret }}><EmbeddedCheckout /></EmbeddedCheckoutProvider> : <p className="my-4">{payment?.status === "expired" ? "Checkout expired. No payment confirmed." : "Payment verification pending."}</p>}
         <Button className="mt-5" variant="outline" onClick={() => { setStripeAttempt(""); sessionStorage.removeItem("private-diagnostic-stripe"); setClientSecret(null); setPayment(null); read({ data: { token } }).then(setInvite); }}>Other provider</Button>
       </section> : returnInput ? <section className="mt-8 border-t border-border pt-6"><h2 className="text-xl">PayPal payment confirmation</h2>
-        <p className="my-4">{payment?.status === "paid" ? "US$1 payment confirmed. No course access was granted." : payment?.status === "cancelled" ? "Payment cancelled. No payment was confirmed." : payment?.approved ? "PayPal approval verified. Confirm the real US$1 payment to Tecendo Som below." : "Payment is not confirmed. Awaiting verification."}</p>
+        <p className="my-4">{payment?.status === "paid" ? "US$1 payment confirmed. Your 7-day courtesy access and welcome emails are on the way." : payment?.status === "cancelled" ? "Payment cancelled. No payment was confirmed." : payment?.approved ? "PayPal approval verified. Confirm the real US$1 payment to Tecendo Som below." : "Payment is not confirmed. Awaiting verification."}</p>
         {payment?.approved && <Button disabled={busy} onClick={pay}>{busy ? "Verifying…" : "Pay US$1"}</Button>}
         <Button className="mt-5" variant="outline" onClick={() => { setReturnInput(null); sessionStorage.removeItem("private-diagnostic-return"); setPayment(null); read({ data: { token } }).then(setInvite); }}>Other provider</Button>
       </section> : !profile ? <div className="mt-8"><EnrollmentForm embedded diagnostic onComplete={setProfile} /></div> : <section className="mt-8 border-t border-border pt-6">

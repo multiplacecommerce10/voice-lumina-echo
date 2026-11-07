@@ -544,7 +544,7 @@ export function EnrollmentForm({ initialProfile, onComplete, embedded = false, d
               {status === "submitting" ? "Sending…" : embedded ? "Continue with these details" : "Submit"}
             </Button>
             <p className="text-xs text-muted-foreground/80 text-center max-w-md">
-              {diagnostic ? "These answers are validated for this private test only and are not saved or submitted as a course application." : "Your information is kept private and used only to welcome and prepare you for the course."}
+              {diagnostic ? "Only your name and email are kept for this private test, to send your welcome and courtesy access. Other answers are not saved." : "Your information is kept private and used only to welcome and prepare you for the course."}
             </p>
           </div>
         </form>

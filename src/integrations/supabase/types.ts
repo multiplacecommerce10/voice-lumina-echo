@@ -737,6 +737,47 @@ export type Database = {
           },
         ]
       }
+      payment_diagnostic_grants: {
+        Row: {
+          access_until: string | null
+          created_at: string
+          email: string
+          existing_access: boolean
+          full_name: string | null
+          granted_at: string | null
+          invite_id: string
+          member_subscription_id: string | null
+        }
+        Insert: {
+          access_until?: string | null
+          created_at?: string
+          email: string
+          existing_access?: boolean
+          full_name?: string | null
+          granted_at?: string | null
+          invite_id: string
+          member_subscription_id?: string | null
+        }
+        Update: {
+          access_until?: string | null
+          created_at?: string
+          email?: string
+          existing_access?: boolean
+          full_name?: string | null
+          granted_at?: string | null
+          invite_id?: string
+          member_subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_diagnostic_grants_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: true
+            referencedRelation: "payment_diagnostic_invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_diagnostic_invites: {
         Row: {
           created_at: string
@@ -1301,6 +1342,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      grant_diagnostic_courtesy: { Args: { p_invite: string }; Returns: string }
       has_active_membership: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       reserve_payment_diagnostic: {

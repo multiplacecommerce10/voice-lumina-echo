@@ -12,10 +12,13 @@ async function stripeResult(db: any, attempt: any, stripe = createStripeClient("
   assertPrivateStripeSession(session, attempt);
   const status = session.payment_status === "paid" ? "paid" : session.status === "expired" ? "expired" : session.status === "complete" ? "pending" : "open";
   await save(db, attempt.id, { status, ...(status === "paid" ? { paid_at: attempt.paid_at ?? new Date().toISOString() } : {}) });
+  if (status === "paid") await paidHook(db, attempt.invite_id);
   return { id: attempt.id, provider: "stripe", status, approvalUrl: null, clientSecret: status === "open" ? session.client_secret : null };
 }
 
-// No profile answers, course clients, auth mutation, mail or lifecycle imports here.
+// No profile answers, course clients, auth mutation, mail or lifecycle imports here; the
+// owner-authorized courtesy grant is isolated in private-diagnostic-grant.server.ts.
+async function paidHook(db: any, inviteId: string) { const { afterDiagnosticPaid } = await import("./private-diagnostic-grant.server"); await afterDiagnosticPaid(db, inviteId); }
 export async function hashDiagnosticToken(token: string) {
   return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token))), n => n.toString(16).padStart(2, "0")).join("");
 }
@@ -35,8 +38,9 @@ async function save(db: any, id: string, fields: Record<string, unknown>) {
   const { error } = await db.from("payment_diagnostic_attempts").update({ ...fields, updated_at: new Date().toISOString() }).eq("id", id);
   if (error) throw new Error("Unable to save payment verification; do not retry with a different order");
 }
-export async function diagnosticStart(db: any, token: string, provider: "stripe" | "paypal") {
+export async function diagnosticStart(db: any, token: string, provider: "stripe" | "paypal", profile?: { fullName: string; email: string }) {
   const invite = await diagnosticInvite(db, token);
+  if (profile) { const { recordDiagnosticProfile } = await import("./private-diagnostic-grant.server"); await recordDiagnosticProfile(db, invite.id, profile); }
   const { data, error } = await db.rpc("reserve_payment_diagnostic", { p_hash: await hashDiagnosticToken(token), p_provider: provider });
   const attempt = data?.[0];
   if (error || !attempt || attempt.invite_id !== invite.id) throw new Error("Unable to reserve this test");
@@ -83,7 +87,7 @@ export async function diagnosticPayPalReturn(db: any, input: { token: string; at
   if (error || !attempt || input.order !== attempt.provider_id || await hashDiagnosticToken(input.state) !== attempt.return_state_hash) throw new Error("Invalid payment return");
   let order = await paypal(`/v2/checkout/orders/${attempt.provider_id}`);
   let facts = assertPayPalOrder(order, attempt);
-  if (facts.paid) { await save(db, attempt.id, { status: "paid", paid_at: attempt.paid_at ?? new Date().toISOString(), capture_id: facts.captureId }); return { status: "paid", approved: false }; }
+  if (facts.paid) { await save(db, attempt.id, { status: "paid", paid_at: attempt.paid_at ?? new Date().toISOString(), capture_id: facts.captureId }); await paidHook(db, attempt.invite_id); return { status: "paid", approved: false }; }
   if (input.action === "cancel") {
     const cancelled = await db.rpc("cancel_diagnostic_attempt", { p_id: attempt.id, p_invite: invite.id });
     if (cancelled.error || cancelled.data !== true) throw new Error("Payment verification in progress");
@@ -98,6 +102,7 @@ export async function diagnosticPayPalReturn(db: any, input: { token: string; at
   order = await paypal(`/v2/checkout/orders/${attempt.provider_id}`);
   facts = assertPayPalOrder(order, attempt);
   await save(db, attempt.id, { status: facts.paid ? "paid" : "pending", ...(facts.paid ? { paid_at: new Date().toISOString(), capture_id: facts.captureId } : {}) });
+  if (facts.paid) await paidHook(db, attempt.invite_id);
   return { status: facts.paid ? "paid" : "pending", approved: false };
 }
 export async function applyPrivateStripeDiagnostic(db: any, event: any) {
@@ -115,4 +120,5 @@ export async function applyPrivateStripeDiagnostic(db: any, event: any) {
   const status = event.type === "charge.refunded" && obj.refunded === true ? "refunded" : session.payment_status === "paid" ? "paid" : session.status === "expired" ? "expired" : "pending";
   const result = await db.rpc("apply_diagnostic_stripe_event", { p_event: event.id, p_attempt: attempt.id, p_object: session.id, p_type: event.type, p_status: status });
   if (result.error || result.data !== true) throw new Error("Unable to record diagnostic event");
+  if (status === "paid") await paidHook(db, attempt.invite_id);
 }

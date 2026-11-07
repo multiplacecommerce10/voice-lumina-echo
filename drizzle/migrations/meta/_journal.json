@@ -92,6 +92,20 @@
       "when": 1794028250385,
       "tag": "0012_diagnostic_creation_lock",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794045975300,
+      "tag": "0013_private_diagnostic_courtesy_grant",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794046144316,
+      "tag": "0014_courtesy_grant_paid_start_and_longer_access",
+      "breakpoints": true
     }
   ]
 }

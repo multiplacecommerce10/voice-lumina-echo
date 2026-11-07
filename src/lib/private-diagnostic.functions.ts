@@ -19,7 +19,7 @@ export const startPrivateDiagnostic = createServerFn({ method: "POST" }).inputVa
   checkOrigin();
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { diagnosticStart } = await import("./private-diagnostic.server");
-  try { return await diagnosticStart(supabaseAdmin, data.token, data.provider); }
+  try { return await diagnosticStart(supabaseAdmin, data.token, data.provider, { fullName: data.profile.fullName, email: data.profile.email }); }
   catch (error) { return { error: error instanceof Error ? error.message : "Private payment unavailable" }; }
 });
 export const returnPrivatePayPal = createServerFn({ method: "POST" }).inputValidator(z.object({ token: invitationTokenSchema, attempt: z.string().uuid(), state: invitationTokenSchema, order: z.string().regex(/^[A-Z0-9]{10,30}$/), action: z.enum(["read", "cancel", "capture"]), confirm: z.boolean().default(false) }).refine(v => v.action !== "capture" || v.confirm === true, "Explicit payment confirmation required")).handler(async ({ data }) => {

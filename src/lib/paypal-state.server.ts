@@ -329,7 +329,17 @@ export async function drainNotifications(env: PayPalEnv, subscriptionId: string)
 
 /** Delivers due outbox rows. Sandbox rows are recorded as skipped_sandbox and never sent. */
 export async function runOutbox(now = () => Date.now()) {
-  return processOutbox({ store: supabaseOutboxStore(), deliver: deliverPayPal, now });
+  return processOutbox({
+    store: supabaseOutboxStore(),
+    deliver: async (row) => {
+      if (row.provider === "courtesy") {
+        const { deliverCourtesy } = await import("@/lib/private-diagnostic-grant.server");
+        return deliverCourtesy(row);
+      }
+      return deliverPayPal(row);
+    },
+    now,
+  });
 }
 
 /** Scheduler: time-based PayPal transitions + outbox drain/retry. Access itself never depends on this job. */

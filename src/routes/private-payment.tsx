@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { readPrivateInvitation, savePrivateDiagnosticForm, startPrivateDiagnostic, returnPrivatePayPal, readPrivateStripe } from "@/lib/private-diagnostic.functions";
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
 import { getStripe, getStripeEnvironment } from "@/lib/stripe";
-import { DIAGNOSTIC_LABEL } from "@/lib/payment-diagnostic";
+import { DIAGNOSTIC_DISPLAY_LABEL } from "@/lib/payment-diagnostic";
 import { PRIVATE_DIAGNOSTIC_VERSION } from "@/lib/private-diagnostic-rules";
 import type { EnrollmentProfile } from "@/lib/enrollment-profile";
 import logo from "@/assets/tecendo-som-logo.png";
@@ -96,13 +96,13 @@ function PrivatePaymentSession({ token }: { token: string }) {
       <article aria-label="Private guest offer" data-offer-version="private-guest-card-v1" className="relative overflow-hidden rounded-lg border border-secondary bg-card p-5 sm:p-7 text-card-foreground">
         <div className="absolute inset-x-0 top-0 h-1 bg-secondary" aria-hidden="true" />
         <div className="mb-4 flex items-center gap-3 text-secondary"><TicketCheck className="h-6 w-6 shrink-0" aria-hidden="true" /><span className="text-sm font-semibold">Private guest · Tecendo Som</span></div>
-        <h1 className="font-display text-3xl break-words tracking-normal">{DIAGNOSTIC_LABEL}</h1>
+        <h1 className="font-display text-3xl break-words tracking-normal">{DIAGNOSTIC_DISPLAY_LABEL}</h1>
         <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1"><span className="font-display text-5xl tracking-normal">US$ 1</span><span className="text-sm text-muted-foreground">One payment per provider · No renewal</span></div>
         <p className="mt-5 text-muted-foreground">You are the payer. Tecendo Som receives one real US$1 payment per selected provider. With your consent, all form answers are saved privately before checkout. After the first confirmed payment, you receive one 7-day Complete courtesy access to the members area and the welcome and account access emails, once, at the email you enter in the form (not your provider account email). A second provider payment does not add or extend access. No subscription or renewal. Provider receipts and processing fees may apply; your total is US$1.</p>
         <p className="mt-5 border-t border-border pt-4 text-sm text-muted-foreground">This invitation expires {new Date(invite.expiresAt ?? "").toLocaleString()}.</p>
       </article>
       {error && <p role="alert" className="my-5 text-destructive">{error}</p>}
-      {stripeAttempt ? <section className="mt-8 border-t border-border pt-6"><h2 className="text-xl">Stripe — {DIAGNOSTIC_LABEL}</h2>
+      {stripeAttempt ? <section className="mt-8 border-t border-border pt-6"><h2 className="text-xl">Stripe — {DIAGNOSTIC_DISPLAY_LABEL}</h2>
         {payment?.status === "paid" ? <p className="my-4">US$1 payment confirmed. Your 7-day courtesy access and welcome emails are on the way.</p> : clientSecret && liveStripe ? <EmbeddedCheckoutProvider stripe={getStripe()} options={{ clientSecret }}><EmbeddedCheckout /></EmbeddedCheckoutProvider> : <p className="my-4">{payment?.status === "expired" ? "Checkout expired. No payment confirmed." : "Payment verification pending."}</p>}
         <Button className="mt-5" variant="outline" onClick={() => { setStripeAttempt(""); sessionStorage.removeItem(`private-diagnostic-stripe:${token}`); setClientSecret(null); setPayment(null); read({ data: { token } }).then(setInvite); }}>Other provider</Button>
       </section> : returnInput ? <section className="mt-8 border-t border-border pt-6"><h2 className="text-xl">PayPal payment confirmation</h2>

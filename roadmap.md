@@ -1,7 +1,8 @@
 # Roadmap — Email notifications (Taskade unified flow)
 
 ## Current request — Private post-form payer test
-- [ ] Add differentiated invitation-only offer card; document explicit retirement after both providers without deleting receipts; verify backup, publish and custom-domain card before delivering invitation again.
+- [x] Add differentiated invitation-only offer card and explicit retirement guide preserving receipts; 14 private/11 webhook tests pass, GitHub a414882 verified, basic security checks pass, publication requested.
+- [ ] Confirm card deployment on custom domain — 05:23 UTC read still serves previous private asset without private-guest-card-v1; do not deliver invitation again until this new card is confirmed.
 - [x] Delivery gate confirmed at 05:20 UTC: custom-domain DOM v2/new JS fingerprint, exact offer, invited form/consent and both controls verified without checkout creation; returns use custom origin, SELECT 1 and unsigned webhooks pass.
 - [x] Apply owner's explicit no-automatic-tax instruction and exact private offer name; isolated embedded Stripe after form/provider choice, one-time catalog separate from course.
 - [x] Updated regressions passed, nine GitHub blobs verified, main preserved, publication requested; live diagnostic catalog is one_time USD 100.

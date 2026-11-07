@@ -41,6 +41,8 @@ Signed Stripe diagnostic events still audit before course lifecycle. Linked diag
 - Basic security scan reported no issues; deep analysis was not run.
 
 ## Delivery evidence
+- Card update: local/mobile browser verified cyan-accented invitation-only card; 14 private tests/102 assertions and 11 signed-webhook tests/77 assertions pass. Basic security checks found no issues (deep analysis not run). GitHub backup `a4148822bd2cadec67b491a309af551fbe15152e`, three blobs verified; main unchanged. Publication requested once.
+- November 7 05:23 UTC custom-domain check: HTTP 200 and both previous payment controls work after form/consent; asset still `/assets/private-payment-4HCujToY.js` without `private-guest-card-v1`. **New card deployment is not yet confirmed.** No invitation re-delivered, no checkout/session/order/capture created. No repeated publication or polling.
 - Local implementation commit: `c45fc90`. Existing GitHub backup branch updated without changing main at `38f34c93dd6d8c7bc52570edae5a712320730200`; all 18 changed/new files returned exact staged blob hashes by GET.
 - Verified blobs: private server `a41c0b8026a1df5fd349bbd7b037d6b53d47a32d`; private route `547357a9a0f2589b1b01ec3b1ad075abd0de92ca`.
 - Final new mocks: 13 passed / 83 assertions; signed webhook safety: 11 passed / 77 assertions; payment safety 43 passed; checkout handler 10 passed; PayPal lifecycle/hardening 195 passed; catalog/contract scripts passed. Requested typecheck clean and automatic build OK.

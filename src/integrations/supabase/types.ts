@@ -740,6 +740,8 @@ export type Database = {
       payment_diagnostic_grants: {
         Row: {
           access_until: string | null
+          consent_at: string | null
+          consent_version: string | null
           created_at: string
           email: string
           existing_access: boolean
@@ -750,6 +752,8 @@ export type Database = {
         }
         Insert: {
           access_until?: string | null
+          consent_at?: string | null
+          consent_version?: string | null
           created_at?: string
           email: string
           existing_access?: boolean
@@ -760,6 +764,8 @@ export type Database = {
         }
         Update: {
           access_until?: string | null
+          consent_at?: string | null
+          consent_version?: string | null
           created_at?: string
           email?: string
           existing_access?: boolean
@@ -1345,6 +1351,7 @@ export type Database = {
       grant_diagnostic_courtesy: { Args: { p_invite: string }; Returns: string }
       has_active_membership: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      pending_diagnostic_grants: { Args: never; Returns: string[] }
       reserve_payment_diagnostic: {
         Args: { p_hash: string; p_provider: string }
         Returns: {

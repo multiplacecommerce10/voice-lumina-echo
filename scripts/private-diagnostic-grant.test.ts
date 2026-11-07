@@ -1,7 +1,7 @@
 import { test, expect, mock } from "bun:test";
 let outboxRuns = 0;
 mock.module("../src/lib/paypal-state.server", () => ({ runOutbox: async () => { outboxRuns++; return {}; } }));
-const { recordDiagnosticProfile, afterDiagnosticPaid, withCourtesyNote, COURTESY_NOTE, EXISTING_ACCESS_NOTE, resolveCourtesyTarget } = await import("../src/lib/private-diagnostic-grant.server");
+const { recordDiagnosticProfile, afterDiagnosticPaid, withCourtesyNote, COURTESY_NOTE, reconcileDiagnosticGrants, EXISTING_ACCESS_NOTE, resolveCourtesyTarget } = await import("../src/lib/private-diagnostic-grant.server");
 
 function db(result: string | Error, bound?: string) {
   const calls: any[] = [];
@@ -13,8 +13,12 @@ function db(result: string | Error, bound?: string) {
 
 test("profile stored once per invitation, first submission wins, email lowercased", async () => {
   const d = db("x");
-  await recordDiagnosticProfile(d, "inv", { fullName: " Ana ", email: " Ana@Ex.COM " });
-  expect(d.calls[0]).toEqual({ t: "payment_diagnostic_grants", row: { invite_id: "inv", email: "ana@ex.com", full_name: "Ana" }, opts: { onConflict: "invite_id", ignoreDuplicates: true } });
+  await recordDiagnosticProfile(d, "inv", { fullName: " Ana ", email: " Ana@Ex.COM ", birthDate: "x", phone: "y" } as any, "v-consent");
+  const { consent_at, ...rest } = d.calls[0].row;
+  expect(rest).toEqual({ invite_id: "inv", email: "ana@ex.com", full_name: "Ana", consent_version: "v-consent" });
+  expect(Number.isFinite(Date.parse(consent_at))).toBe(true);
+  expect(d.calls[0].opts).toEqual({ onConflict: "invite_id", ignoreDuplicates: true });
+  await expect(recordDiagnosticProfile(db("x"), "inv", { fullName: "A", email: "a@b.c" }, "")).rejects.toThrow(/Consent/);
 });
 
 test("grant is keyed by invitation, not provider; emails only drained when granted", async () => {
@@ -30,8 +34,8 @@ test("grant failure never breaks payment recording", async () => {
 });
 
 test("recipient is immutable: a different form email for the same invitation is rejected", async () => {
-  await expect(recordDiagnosticProfile(db("x", "mom@ex.com"), "inv", { fullName: "A", email: "other@ex.com" })).rejects.toThrow(/different email/);
-  await recordDiagnosticProfile(db("x", "mom@ex.com"), "inv", { fullName: "A", email: "MOM@ex.com" });
+  await expect(recordDiagnosticProfile(db("x", "mom@ex.com"), "inv", { fullName: "A", email: "other@ex.com" }, "v")).rejects.toThrow(/different email/);
+  await recordDiagnosticProfile(db("x", "mom@ex.com"), "inv", { fullName: "A", email: "MOM@ex.com" }, "v");
 });
 
 test("welcome copy states US$1, Complete 7 days, no renewal — never a recurring receipt", async () => {
@@ -64,4 +68,25 @@ test("no send before grant or without the courtesy row", async () => {
   await expect(resolveCourtesyTarget(grantDb({ email: "a@b.c", granted_at: null }, null), row("diag:inv"))).rejects.toThrow();
   await expect(resolveCourtesyTarget(grantDb({ email: "a@b.c", granted_at: "x", existing_access: false }, null), row("diag:inv"))).rejects.toThrow();
   await expect(resolveCourtesyTarget(grantDb({}, null), row("I-PAYPAL"))).rejects.toThrow();
+});
+
+test("RPC failure first, then the scheduled worker retries and grants; only paid+ungranted invites are listed", async () => {
+  // Inline hook fails: grant lost for now, payment unaffected.
+  expect(await afterDiagnosticPaid(db(new Error("rpc down")), "inv")).toBe("error");
+  // Worker: SQL lists only paid invitations with granted_at NULL (pending/approved never appear).
+  const calls: any[] = []; let drained = 0;
+  const w = { rpc: async (n: string, a?: any) => { calls.push([n, a]); return n === "pending_diagnostic_grants" ? { data: ["inv"], error: null } : { data: "granted", error: null }; } };
+  expect(await reconcileDiagnosticGrants(w, async () => { drained++; })).toEqual({ granted: 1 });
+  expect(calls).toEqual([["pending_diagnostic_grants", undefined], ["grant_diagnostic_courtesy", { p_invite: "inv" }]]);
+  expect(drained).toBe(1);
+  // Second worker run after success: nothing pending, no grant call; drain still retries failed emails.
+  const calls2: any[] = [];
+  const w2 = { rpc: async (n: string) => { calls2.push(n); return { data: [], error: null }; } };
+  expect(await reconcileDiagnosticGrants(w2, async () => { drained++; })).toEqual({});
+  expect(calls2).toEqual(["pending_diagnostic_grants"]); expect(drained).toBe(2);
+});
+
+test("worker keeps going when one grant errors and reports it", async () => {
+  const w = { rpc: async (n: string, a?: any) => n === "pending_diagnostic_grants" ? { data: ["a", "b"], error: null } : a.p_invite === "a" ? { data: null, error: new Error("x") } : { data: "already", error: null } };
+  expect(await reconcileDiagnosticGrants(w, async () => {})).toEqual({ error: 1, already: 1 });
 });

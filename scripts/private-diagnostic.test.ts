@@ -9,6 +9,8 @@ let row: any, valid = true, createCalls = 0, captures = 0, approved = true, comp
 let stripeCreates = 0;
 let stripeParams: any;
 const stripeSession = () => ({ id: "cs_live_fixture", livemode: true, metadata: { payment_diagnostic: "conscious_voice_usd1_v1", diagnostic_attempt: id }, mode: "payment", currency: "usd", amount_total: 100, ui_mode: "embedded_page", status: "open", payment_status: "unpaid", client_secret: "local-fixture-only", automatic_tax: { enabled: false }, total_details: { amount_tax: 0, amount_discount: 0 } });
+let profiles = 0; const P = { fullName: "Fixture", email: "fixture@example.invalid" };
+mock.module("../src/lib/private-diagnostic-grant.server", () => ({ recordDiagnosticProfile: async () => { profiles++; }, afterDiagnosticPaid: async () => "granted" }));
 mock.module("../src/lib/stripe.server", () => ({ createStripeClient: () => ({ prices: { list: async () => ({ data: [{ currency: "usd", unit_amount: 100, type: "one_time", product: "prod_fixture" }] }) }, products: { retrieve: async () => ({ name: "Convidado especial — US$ 1", metadata: { lovable_external_id: "conscious_voice_private_guest" } }) }, checkout: { sessions: { create: async (params: any, options: any) => { stripeCreates++; stripeParams = params; expect(options.idempotencyKey).toBe(`cv-diag-stripe-${id}`); return stripeSession(); }, retrieve: async () => stripeSession() } } }) }));
 function order() { return { id: "TESTORDER12345", intent: "CAPTURE", status: completed ? "COMPLETED" : approved ? "APPROVED" : "PAYER_ACTION_REQUIRED", purchase_units: [{ reference_id: id, custom_id: `conscious_voice_usd1_v1:${id}`, payee: { merchant_id: PAYPAL_DIAGNOSTIC_PAYEE }, amount: { value: "1.00", currency_code: "USD" }, ...(completed ? { payments: { captures: [{ id: "CAPTUREFIXTURE", status: pendingCapture ? "PENDING" : "COMPLETED", amount: { value: "1.00", currency_code: "USD" } }] } } : {}) }], links: [{ rel: "payer-action", href: "https://www.paypal.com/checkoutnow?token=TESTORDER12345" }] }; }
 const fetchSpy = mock(async (url: any, init: any = {}) => {
@@ -33,7 +35,7 @@ test("expired, revoked, invalid invitations fail", async () => {
   expect(invitationValid(null)).toBe(false); expect(invitationValid({ expires_at: "invalid", revoked_at: null })).toBe(false);
   expect(invitationValid({ expires_at: new Date(Date.now()-1).toISOString(), revoked_at: null })).toBe(false);
   expect(invitationValid({ expires_at: new Date(Date.now()+1000).toISOString(), revoked_at: "now" })).toBe(false);
-  valid = false; await expect(diagnosticStart(db, token, "paypal")).rejects.toThrow(); expect(createCalls).toBe(0);
+  valid = false; await expect(diagnosticStart(db, token, "paypal", P)).rejects.toThrow(); expect(createCalls).toBe(0);
 });
 test("form requires every shared field and explicit consent", () => {
   expect(diagnosticFormSchema.safeParse({ token, profile, consent: true, provider: "paypal" }).success).toBe(true);
@@ -42,7 +44,7 @@ test("form requires every shared field and explicit consent", () => {
 });
 test("cross-origin and missing-origin writes rejected", () => { expect(() => assertDiagnosticOrigin(null, "https://site.test")).toThrow(); expect(() => assertDiagnosticOrigin("https://evil.test", "https://site.test")).toThrow(); expect(() => assertDiagnosticOrigin("https://site.test", "https://site.test", "cross-site")).toThrow(); expect(() => assertDiagnosticOrigin("https://site.test", "https://site.test", "same-origin")).not.toThrow(); });
 test("authorized Stripe is one-time 100 USD, no automatic tax, exact offer and isolated metadata", async () => {
-  await diagnosticStart(db, token, "stripe"); expect(stripeCreates).toBe(1);
+  await diagnosticStart(db, token, "stripe", P); expect(stripeCreates).toBe(1);
   expect(stripeParams.mode).toBe("payment"); expect(stripeParams.ui_mode).toBe("embedded_page");
   expect(stripeParams.integration_identifier).toMatch(/^consciousvoice_sub_v2_[a-z]{8}$/);
   expect(stripeParams.line_items).toEqual([{ quantity: 1, price_data: { currency: "usd", unit_amount: 100, tax_behavior: "inclusive", product: "prod_fixture" } }]);
@@ -50,12 +52,12 @@ test("authorized Stripe is one-time 100 USD, no automatic tax, exact offer and i
   expect(stripeParams.payment_intent_data.description).toBe("Convidado especial — US$ 1");
   expect(stripeParams.metadata).toEqual({ payment_diagnostic: "conscious_voice_usd1_v1", diagnostic_attempt: id });
   expect(stripeParams.payment_intent_data.metadata).toEqual(stripeParams.metadata); expect(captures).toBe(0);
-  await diagnosticStart(db, token, "stripe"); expect(stripeCreates).toBe(1);
+  await diagnosticStart(db, token, "stripe", P); expect(stripeCreates).toBe(1);
 });
-test("concurrent Stripe starts create only one session", async () => { await Promise.allSettled([diagnosticStart(db,token,"stripe"),diagnosticStart(db,token,"stripe")]); expect(stripeCreates).toBe(1); });
-test("repeat provider start reuses one order; no profile persisted", async () => { const a = await diagnosticStart(db, token, "paypal"), b = await diagnosticStart(db, token, "paypal"); expect(a.id).toBe(b.id); expect(createCalls).toBe(1); expect(row.profile).toBeUndefined(); expect(captures).toBe(0); });
-test("concurrent provider starts allow only one creation call", async () => { await Promise.allSettled([diagnosticStart(db,token,"paypal"),diagnosticStart(db,token,"paypal")]); expect(createCalls).toBe(1); expect(captures).toBe(0); });
-async function input() { await diagnosticStart(db, token, "paypal"); return { token, attempt: id, state: await hashDiagnosticToken(`${token}:${id}:paypal-return`), order: "TESTORDER12345", action: "read" as const }; }
+test("concurrent Stripe starts create only one session", async () => { await Promise.allSettled([diagnosticStart(db, token, "stripe", P),diagnosticStart(db, token, "stripe", P)]); expect(stripeCreates).toBe(1); });
+test("repeat provider start reuses one order; only minimal grant profile recorded", async () => { const a = await diagnosticStart(db, token, "paypal", P), b = await diagnosticStart(db, token, "paypal", P); expect(a.id).toBe(b.id); expect(createCalls).toBe(1); expect(row.profile).toBeUndefined(); expect(captures).toBe(0); });
+test("concurrent provider starts allow only one creation call", async () => { await Promise.allSettled([diagnosticStart(db, token, "paypal", P),diagnosticStart(db, token, "paypal", P)]); expect(createCalls).toBe(1); expect(captures).toBe(0); });
+async function input() { await diagnosticStart(db, token, "paypal", P); return { token, attempt: id, state: await hashDiagnosticToken(`${token}:${id}:paypal-return`), order: "TESTORDER12345", action: "read" as const }; }
 test("wrong return state or order denied", async () => { const i = await input(); await expect(diagnosticPayPalReturn(db, { ...i, state: "b".repeat(64) })).rejects.toThrow(); await expect(diagnosticPayPalReturn(db, { ...i, order: "WRONGORDER123" })).rejects.toThrow(); expect(captures).toBe(0); });
 test("approval/read never captures and cancelled cannot be paid", async () => { const i = await input(); expect((await diagnosticPayPalReturn(db,i)).approved).toBe(true); expect(captures).toBe(0); expect((await diagnosticPayPalReturn(db,{...i,action:"cancel"})).status).toBe("cancelled"); await expect(diagnosticPayPalReturn(db,{...i,action:"capture"})).rejects.toThrow(); expect(captures).toBe(0); });
 test("unapproved capture rejected", async () => { const i=await input(); approved=false; await expect(diagnosticPayPalReturn(db,{...i,action:"capture"})).rejects.toThrow(); expect(captures).toBe(0); });
@@ -66,3 +68,4 @@ test("wrong amount, currency, payee, reference or subscription intent denied", (
   for (const mutation of [(o:any)=>o.intent="SUBSCRIPTION",(o:any)=>o.purchase_units[0].amount.value="2.00",(o:any)=>o.purchase_units[0].amount.currency_code="BRL",(o:any)=>o.purchase_units[0].payee.merchant_id="OTHER",(o:any)=>o.purchase_units[0].reference_id="OTHER",(o:any)=>o.purchase_units[0].custom_id="OTHER"]) { const o=order(); mutation(o); expect(()=>assertPayPalOrder(o,bound)).toThrow(); }
 });
 test("diagnostic webhook facts reject excess tax totals, currency and subscriptions", () => { const e:any={livemode:true,type:"checkout.session.completed",data:{object:{metadata:{payment_diagnostic:"conscious_voice_usd1_v1"},amount_total:100,currency:"usd",mode:"payment"}}}; expect(classifyDiagnosticEvent(e,"live")?.valid).toBe(true); for(const fields of [{amount_total:101},{currency:"brl"},{mode:"subscription"},{subscription:"sub_x"}]) expect(classifyDiagnosticEvent({...e,data:{object:{...e.data.object,...fields}}},"live")?.valid).toBe(false); });
+test("checkout cannot start without the validated form profile", async () => { await expect(diagnosticStart(db, token, "paypal")).rejects.toThrow(/enrollment form/); });

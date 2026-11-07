@@ -11,6 +11,14 @@ async function handleSweep() {
   try {
     const { runAbandonedSweep } = await import("@/lib/lead-recovery.server");
     const result = await runAbandonedSweep();
+    // Durable retry for private US$1 courtesy grants + outbox; never affects the recovery sweep result.
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { reconcileDiagnosticGrants } = await import("@/lib/private-diagnostic-grant.server");
+      await reconcileDiagnosticGrants(supabaseAdmin);
+    } catch (e) {
+      console.error("[recover-abandoned] courtesy reconcile failed:", e instanceof Error ? e.message : "error");
+    }
 
     await recordWebhookAudit({
       direction: "inbound",

@@ -7,9 +7,11 @@ import type { OutboxRow } from "./notification-outbox";
 export const COURTESY_PROVIDER = "courtesy";
 
 /** Stores minimal name/email once per invitation (first submission wins). */
-export async function recordDiagnosticProfile(db: any, inviteId: string, profile: { fullName: string; email: string }) {
+export async function recordDiagnosticProfile(db: any, inviteId: string, profile: { fullName: string; email: string }, consentVersion: string) {
+  if (!consentVersion) throw new Error("Consent is required");
+  // Only name, normalized email and the consent version/time are stored; no other profile answers.
   const { error } = await db.from("payment_diagnostic_grants").upsert(
-    { invite_id: inviteId, email: profile.email.trim().toLowerCase(), full_name: profile.fullName.trim() },
+    { invite_id: inviteId, email: profile.email.trim().toLowerCase(), full_name: profile.fullName.trim(), consent_version: consentVersion, consent_at: new Date().toISOString() },
     { onConflict: "invite_id", ignoreDuplicates: true },
   );
   if (error) throw new Error("Unable to record private enrollment");
@@ -45,6 +47,24 @@ export async function afterDiagnosticPaid(db: any, inviteId: string) {
     console.error("[private-diagnostic] courtesy grant pending:", e instanceof Error ? e.message : "error");
     return "error";
   }
+}
+
+/**
+ * Durable retry: grants every paid invitation whose grant is still missing (e.g. the inline RPC failed
+ * after the provider confirmed payment), then drains due outbox rows. Called by the 5-minute scheduled sweep.
+ * Idempotent: grant_diagnostic_courtesy and outbox dedupe keys make replays harmless.
+ */
+export async function reconcileDiagnosticGrants(db: any, drain?: () => Promise<unknown>) {
+  const { data, error } = await db.rpc("pending_diagnostic_grants");
+  if (error) throw new Error("Unable to list pending courtesy grants");
+  const results: Record<string, number> = {};
+  for (const id of (data ?? []) as string[]) {
+    const r = await db.rpc("grant_diagnostic_courtesy", { p_invite: id });
+    const k = r.error ? "error" : String(r.data);
+    results[k] = (results[k] ?? 0) + 1;
+  }
+  if (drain) await drain(); else { const { runOutbox } = await import("./paypal-state.server"); await runOutbox(); }
+  return results;
 }
 
 /** Resolves who/what to email from the invitation grant (form email), never from provider payer data. */

@@ -1,3 +1,4 @@
+import { PRIVATE_DIAGNOSTIC_VERSION } from "./private-diagnostic-rules";
 import { getAccessToken, PAYPAL_API_BASE } from "./paypal.server";
 import { assertPayPalOrder, invitationValid, PAYPAL_DIAGNOSTIC_PAYEE, DIAGNOSTIC_ORIGIN, DIAGNOSTIC_PRICE_KEY } from "./private-diagnostic-rules";
 import { PAYMENT_DIAGNOSTIC, DIAGNOSTIC_LABEL } from "./payment-diagnostic";
@@ -40,7 +41,8 @@ async function save(db: any, id: string, fields: Record<string, unknown>) {
 }
 export async function diagnosticStart(db: any, token: string, provider: "stripe" | "paypal", profile?: { fullName: string; email: string }) {
   const invite = await diagnosticInvite(db, token);
-  if (profile) { const { recordDiagnosticProfile } = await import("./private-diagnostic-grant.server"); await recordDiagnosticProfile(db, invite.id, profile); }
+  if (!profile) throw new Error("Complete the private enrollment form first");
+  { const { recordDiagnosticProfile } = await import("./private-diagnostic-grant.server"); await recordDiagnosticProfile(db, invite.id, profile, PRIVATE_DIAGNOSTIC_VERSION); }
   const { data, error } = await db.rpc("reserve_payment_diagnostic", { p_hash: await hashDiagnosticToken(token), p_provider: provider });
   const attempt = data?.[0];
   if (error || !attempt || attempt.invite_id !== invite.id) throw new Error("Unable to reserve this test");

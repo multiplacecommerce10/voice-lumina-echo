@@ -1,32 +1,25 @@
 import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { getStripeEnvironment } from "@/lib/stripe";
+import type { PackageConsent } from "@/lib/payments.functions";
+import {
+  getPayPalCheckoutConfig,
+  preparePayPalSubscription,
+  registerPayPalApproval,
+} from "@/lib/paypal.functions";
 
-const PAYPAL_CLIENT_ID =
-  "BAAQb0hljO42Km-vpTc_Ut77BE8jpmPUkWuMIhghGjCTCncFH1C9T0hNQDN5sywdU3HLl2EU8nBwX22vQM";
-
-const SDK_SRC = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&vault=true&intent=subscription&locale=en_US`;
+// The SDK's onApprove only REPORTS approval. Access is granted exclusively by
+// the server after a verified PAYMENT.SALE.COMPLETED webhook.
 
 let sdkPromise: Promise<void> | null = null;
+let sdkClientId: string | null = null;
 
-function loadPayPalSdk(): Promise<void> {
-  if (typeof window === "undefined") return Promise.resolve();
-  if ((window as any).paypal) return Promise.resolve();
-  if (sdkPromise) return sdkPromise;
-
+function loadPayPalSdk(clientId: string): Promise<void> {
+  if (sdkPromise && sdkClientId === clientId) return sdkPromise;
+  sdkClientId = clientId;
   sdkPromise = new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>(
-      `script[src="${SDK_SRC}"]`,
-    );
-    if (existing) {
-      existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", () => {
-        sdkPromise = null;
-        reject(new Error("PayPal SDK failed to load"));
-      });
-      return;
-    }
     const script = document.createElement("script");
-    script.src = SDK_SRC;
-    script.setAttribute("data-sdk-integration-source", "button-factory");
+    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&vault=true&intent=subscription&locale=en_US`;
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => {
@@ -38,176 +31,101 @@ function loadPayPalSdk(): Promise<void> {
   return sdkPromise;
 }
 
-interface PayPalSubscribeButtonProps {
-  planId: string;
-  color?: "gold" | "blue" | "silver" | "white" | "black";
-}
-
 type Status =
+  | { kind: "hidden" }
   | { kind: "loading" }
   | { kind: "ready" }
-  | { kind: "submitting" }
-  | { kind: "approved"; id: string }
-  | { kind: "cancelled" }
+  | { kind: "confirming" }
   | { kind: "error"; message: string };
 
-export function PayPalSubscribeButton({ planId, color = "gold" }: PayPalSubscribeButtonProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState<Status>({ kind: "loading" });
-  const [retryKey, setRetryKey] = useState(0);
+export function PayPalSubscribeButton(props: {
+  tier: "live" | "complete";
+  durationMonths: 1 | 3 | 6;
+  leadId: string;
+  consent?: PackageConsent;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [status, setStatus] = useState<Status>({ kind: "hidden" });
+  const getConfig = useServerFn(getPayPalCheckoutConfig);
+  const prepare = useServerFn(preparePayPalSubscription);
+  const register = useServerFn(registerPayPalApproval);
 
   useEffect(() => {
     let cancelled = false;
-    let buttonsInstance: any = null;
-    setStatus({ kind: "loading" });
+    let buttons: any = null;
+    let environment: "sandbox" | "live";
+    try {
+      environment = getStripeEnvironment();
+    } catch {
+      return;
+    }
+    const consent = props.consent;
+    if (!consent?.termsVersion || !consent.privacyVersion || !consent.acceptedAt) return;
 
-    loadPayPalSdk()
-      .then(() => {
-        if (cancelled || !containerRef.current) return;
+    getConfig({ data: { environment } })
+      .then(async (cfg) => {
+        if (cancelled || !cfg.available || !cfg.clientId) return;
+        setStatus({ kind: "loading" });
+        await loadPayPalSdk(cfg.clientId);
         const paypal = (window as any).paypal;
-        if (!paypal?.Buttons) {
-          setStatus({ kind: "error", message: "PayPal is unavailable right now." });
+        if (cancelled || !ref.current || !paypal?.Buttons) return;
+        let intentId = "";
+        buttons = paypal.Buttons({
+          style: { shape: "pill", color: "gold", layout: "vertical", label: "subscribe" },
+          createSubscription: async (_d: unknown, actions: any) => {
+            const r = await prepare({
+              data: {
+                environment,
+                leadId: props.leadId,
+                tier: props.tier,
+                durationMonths: props.durationMonths,
+                consent: consent as Required<Pick<PackageConsent, "termsVersion" | "privacyVersion" | "acceptedAt">> & PackageConsent,
+              },
+            });
+            intentId = r.intentId;
+            return actions.subscription.create({ plan_id: r.planId, custom_id: r.intentId });
+          },
+          onApprove: async (d: { subscriptionID: string }) => {
+            setStatus({ kind: "confirming" });
+            await register({ data: { environment, intentId, subscriptionId: d.subscriptionID } }).catch(() => {});
+          },
+          onError: () =>
+            setStatus({ kind: "error", message: "Something went wrong with PayPal. Please try again or pay by card." }),
+        });
+        if (buttons.isEligible && !buttons.isEligible()) {
+          setStatus({ kind: "hidden" });
           return;
         }
-        containerRef.current.innerHTML = "";
-        buttonsInstance = paypal.Buttons({
-          style: { shape: "pill", color, layout: "vertical", label: "subscribe" },
-          createSubscription: (_data: any, actions: any) => {
-            setStatus({ kind: "submitting" });
-            return actions.subscription
-              .create({ plan_id: planId })
-              .catch((err: unknown) => {
-                setStatus({
-                  kind: "error",
-                  message:
-                    err instanceof Error
-                      ? err.message
-                      : "We couldn't start your subscription. Please try again.",
-                });
-                throw err;
-              });
-          },
-          onApprove: (data: any) => {
-            setStatus({ kind: "approved", id: data.subscriptionID });
-          },
-          onCancel: () => {
-            setStatus({ kind: "cancelled" });
-          },
-          onError: (err: unknown) => {
-            // eslint-disable-next-line no-console
-            console.error("PayPal error", err);
-            setStatus({
-              kind: "error",
-              message:
-                "Something went wrong with PayPal. Please try again or use another method.",
-            });
-          },
-          onInit: () => {
-            setStatus({ kind: "ready" });
-          },
-        });
-
-        if (!buttonsInstance.isEligible || buttonsInstance.isEligible()) {
-          buttonsInstance
-            .render(containerRef.current)
-            .then(() => {
-              // onInit usually fires; fall back to ready in case it doesn't
-              setStatus((s) => (s.kind === "loading" ? { kind: "ready" } : s));
-            })
-            .catch((err: unknown) => {
-              if (cancelled) return;
-              // eslint-disable-next-line no-console
-              console.error(err);
-              setStatus({
-                kind: "error",
-                message: "We couldn't display the PayPal button.",
-              });
-            });
-        } else {
-          setStatus({
-            kind: "error",
-            message: "PayPal is not available for this plan in your region.",
-          });
-        }
+        await buttons.render(ref.current);
+        if (!cancelled) setStatus({ kind: "ready" });
       })
-      .catch((err) => {
-        if (cancelled) return;
-        // eslint-disable-next-line no-console
-        console.error(err);
-        setStatus({
-          kind: "error",
-          message: "We couldn't reach PayPal. Check your connection and try again.",
-        });
+      .catch(() => {
+        if (!cancelled) setStatus({ kind: "hidden" });
       });
-
     return () => {
       cancelled = true;
       try {
-        buttonsInstance?.close?.();
+        buttons?.close?.();
       } catch {
-        // ignore
+        /* ignore */
       }
     };
-  }, [planId, color, retryKey]);
+  }, [props.tier, props.durationMonths, props.leadId, props.consent]);
 
-  const isOverlay =
-    status.kind === "loading" || status.kind === "submitting";
-
+  if (status.kind === "hidden") return null;
   return (
-    <div className="space-y-2">
-      <div className="relative min-h-[52px]">
-        <div
-          ref={containerRef}
-          className={`paypal-button-container transition-opacity ${
-            status.kind === "error" ? "opacity-40 pointer-events-none" : ""
-          } ${isOverlay ? "opacity-60 pointer-events-none" : ""}`}
-        />
-        {status.kind === "loading" && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-9 w-full max-w-[220px] rounded-full bg-muted/40 animate-pulse" />
-          </div>
-        )}
-        {status.kind === "submitting" && (
-          <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <span
-              aria-hidden
-              className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin"
-            />
-            <span>Opening secure PayPal checkout…</span>
-          </div>
-        )}
-      </div>
-
-      {status.kind === "approved" && (
-        <p
-          role="status"
-          className="text-xs text-center text-primary"
-        >
-          ✓ Subscription confirmed. Check your email for next steps.
-        </p>
-      )}
-      {status.kind === "cancelled" && (
-        <p
-          role="status"
-          className="text-xs text-center text-muted-foreground"
-        >
-          Checkout cancelled — you can try again whenever you're ready.
+    <div className="mt-4 border-t border-border pt-4 space-y-2">
+      <p className="text-xs text-center text-muted-foreground">Or subscribe with PayPal — same price, same renewal terms.</p>
+      <div ref={ref} className={status.kind === "confirming" ? "hidden" : ""} />
+      {status.kind === "confirming" && (
+        <p role="status" className="text-sm text-center text-foreground/90">
+          PayPal approved your subscription. We're confirming your payment now — your welcome email and a
+          secure member-area access link arrive as soon as it clears.{" "}
+          <a href="/membership?provider=paypal" className="text-primary hover:underline">How to manage a PayPal subscription</a>
         </p>
       )}
       {status.kind === "error" && (
-        <div
-          role="alert"
-          className="text-xs text-center text-destructive flex flex-col items-center gap-1"
-        >
-          <span>{status.message}</span>
-          <button
-            type="button"
-            onClick={() => setRetryKey((k) => k + 1)}
-            className="underline underline-offset-2 hover:text-foreground"
-          >
-            Try again
-          </button>
-        </div>
+        <p role="alert" className="text-xs text-center text-destructive">{status.message}</p>
       )}
     </div>
   );

@@ -8,6 +8,7 @@
 
 import { GRACE_PERIOD_DAYS, durationMonthsFromLookupKey, tierFromLookupKey } from "@/lib/subscription-catalog";
 import type { StripeEnv } from "@/lib/stripe.server";
+import { isMembershipActive } from "@/lib/membership-access";
 
 export type AccessStatus =
   | "pending"
@@ -23,6 +24,7 @@ export type MemberSubscriptionRow = {
   email: string | null;
   full_name: string | null;
   environment: string;
+  courtesy_access?: boolean | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string;
   stripe_price_id: string | null;
@@ -338,10 +340,7 @@ export function evaluateAccess(
     !!row.grace_expires_at &&
     now >= new Date(row.grace_expires_at).getTime();
   if (graceExpired) return { active: false, effectiveStatus: "suspended", graceExpired: true };
-  const active =
-    row.access_status === "active" ||
-    (row.access_status === "past_due_grace" && !graceExpired) ||
-    (row.access_status === "refund_review" && !!row.student_enrolled_at);
+  const active = isMembershipActive(row, now);
   return { active, effectiveStatus: row.access_status, graceExpired: false };
 }
 

@@ -8,7 +8,7 @@ const filterSchema = z.object({
 
 /** Live snapshot of lead states for the monitoring/debug screen. */
 export const getLeadsSnapshot = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => filterSchema.parse(input ?? {}))
+  .validator((input: unknown) => filterSchema.parse(input ?? {}))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -62,15 +62,15 @@ export const checkWebhookHealth = createServerFn({ method: "POST" }).handler(asy
   };
 });
 
-/** Sends a dry-run recovery payload for a real lead so the flow can be inspected safely. */
+/** Sends a test recovery email for a real lead via Hostinger (dry-run by default). */
 export const testRecoveryForLead = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({ leadId: z.string().uuid(), live: z.boolean().optional().default(false) }).parse(input),
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { LEAD_SELECT } = await import("@/lib/lead-recovery.server");
-    const { forwardToTaskade } = await import("@/lib/taskade.server");
+    const { buildRecoveryEmail } = await import("@/lib/recovery-email");
 
     const { data: lead, error } = await supabaseAdmin
       .from("leads")
@@ -80,29 +80,38 @@ export const testRecoveryForLead = createServerFn({ method: "POST" })
 
     if (error || !lead) return { ok: false as const, reason: "lead_not_found" };
 
-    const { markFictitious } = await import("@/lib/fictitious");
-    const result = await forwardToTaskade(
-      markFictitious({
-        event: "checkout.abandoned",
-        full_name: lead.full_name,
-        email: lead.email,
-        phone: lead.phone,
-        plan: lead.plan_intended,
-        extra: {
-          lead_id: lead.id,
-          email_kind: "abandoned_checkout_recovery",
-          ...(data.live ? { force_live: true } : { dry_run: true }),
-        },
-      }),
-      { flow: "recovery" },
-    );
+    let resumeCode = lead.resume_code ?? null;
+    if (!resumeCode) {
+      const { newResumeCode } = await import("@/lib/resume-code.server");
+      resumeCode = newResumeCode();
+      await supabaseAdmin.from("leads").update({ resume_code: resumeCode }).eq("id", lead.id);
+    }
 
-    return { ok: true as const, result };
+    const draft = buildRecoveryEmail({
+      leadId: lead.id,
+      fullName: lead.full_name,
+      planIntended: lead.plan_intended,
+      resumeCode,
+    });
+
+    if (!data.live) {
+      console.log(`[testRecoveryForLead] DRY-RUN would email ${lead.email}: ${draft.subject}`);
+      return { ok: true as const, result: { ok: true, dryRun: true, subject: draft.subject } };
+    }
+
+    const { sendHostingerMail } = await import("@/lib/hostinger-mail.server");
+    const sent = await sendHostingerMail("confirm", {
+      to: lead.email.toLowerCase(),
+      subject: `[TEST] ${draft.subject}`,
+      html: draft.bodyHtml,
+      text: draft.bodyText,
+    });
+    return { ok: true as const, result: sent };
   });
 
 /** Recent webhook audit entries (payloads, status codes and processing time). */
 export const getWebhookAudit = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         direction: z.enum(["all", "inbound", "outbound"]).optional().default("all"),
@@ -156,7 +165,7 @@ export const getWebhookAudit = createServerFn({ method: "POST" })
 
 /** Full transition timeline for a single lead (states + webhook events). */
 export const getLeadTimeline = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ leadId: z.string().uuid() }).parse(input))
+  .validator((input: unknown) => z.object({ leadId: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 

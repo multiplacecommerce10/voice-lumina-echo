@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { profileSchema } from "@/lib/enrollment-profile";
 import { COURSE_START_UTC, formatClassInTimeZone } from "@/lib/course-schedule";
 import {
   COURSE_MODEL,
@@ -38,12 +39,12 @@ const enrollmentSchema = z.object({
   landingUrl: z.string().trim().max(500).optional().default(""),
   referrer: z.string().trim().max(500).optional().default(""),
   timezone: z.string().trim().max(80).optional().default(""),
-});
+}).extend(profileSchema.shape);
 
 export type EnrollmentInput = z.infer<typeof enrollmentSchema>;
 
 export const submitEnrollment = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => enrollmentSchema.parse(input))
+  .validator((input: unknown) => enrollmentSchema.parse(input))
   .handler(async ({ data }) => {
     const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
     if (!LOVABLE_API_KEY) {
@@ -212,12 +213,13 @@ export const submitEnrollment = createServerFn({ method: "POST" })
     };
 
     try {
-      // Taskade active; Make opt-in only via MAKE_FORWARDING_ENABLED="true".
+      // Taskade was decommissioned (tokens/webhooks disabled by the owner).
+      // The enrollment data is already persisted in the leads table above and
+      // in the Google Sheet; Make stays opt-in via MAKE_FORWARDING_ENABLED="true".
       const { isMakeForwardingEnabled, MAKE_DISABLED_RESULT } = await import(
         "@/lib/make-flag"
       );
-      const { forwardToTaskade } = await import("@/lib/taskade.server");
-      const jobs: Promise<unknown>[] = [forwardToTaskade(forwardPayload)];
+      const jobs: Promise<unknown>[] = [];
       if (isMakeForwardingEnabled()) {
         const { forwardToMake } = await import("@/lib/make.server");
         jobs.push(forwardToMake(forwardPayload));

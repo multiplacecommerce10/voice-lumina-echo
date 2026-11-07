@@ -6,15 +6,45 @@ import {
   Scripts,
   ClientOnly,
 } from "@tanstack/react-router";
-import { useEffect, lazy, Suspense } from "react";
+import { useEffect, lazy, Suspense, Component } from "react";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { PreviewCacheToggle } from "@/components/PreviewCacheToggle";
 
 // Browser-only: the chat renderer pulls in very large libraries that must not
-// be bundled into the server build.
-const CourseChatAgent = lazy(() =>
-  import("@/components/CourseChatAgent").then((m) => ({ default: m.CourseChatAgent })),
-);
+// be bundled into the server build. The import retries on transient network
+// failures and falls back to a page reload once when a new deploy has
+// replaced the old chunk files.
+async function loadChat(attempt = 0): Promise<{ default: React.ComponentType }> {
+  try {
+    const m = await import("@/components/CourseChatAgent");
+    return { default: m.CourseChatAgent };
+  } catch (err) {
+    if (attempt < 2) {
+      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      return loadChat(attempt + 1);
+    }
+    const KEY = "chat-chunk-reloaded";
+    if (typeof window !== "undefined" && !sessionStorage.getItem(KEY)) {
+      sessionStorage.setItem(KEY, "1");
+      window.location.reload();
+    }
+    throw err;
+  }
+}
+const CourseChatAgent = lazy(() => loadChat());
+
+class ChatBoundary extends Component<{ children: React.ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.warn("[chat] failed to load", error);
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { captureUtms } from "@/lib/utm";
 import { CONSENT_EVENT } from "@/lib/consent";
@@ -50,14 +80,10 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { name: "google-site-verification", content: "aUkiNxbR5q7nqGN8Qd5gVB62ALZAe6rz1XREjbKsul0" },
+      { name: "author", content: "Tecendo Som" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -106,9 +132,11 @@ function RootComponent() {
       <PaymentTestModeBanner />
       <Outlet />
       <ClientOnly fallback={null}>
-        <Suspense fallback={null}>
-          <CourseChatAgent />
-        </Suspense>
+        <ChatBoundary>
+          <Suspense fallback={null}>
+            <CourseChatAgent />
+          </Suspense>
+        </ChatBoundary>
       </ClientOnly>
       <PreviewCacheToggle />
       <Toaster />

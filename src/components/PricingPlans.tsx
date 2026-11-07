@@ -4,19 +4,20 @@ import { LEGAL } from "@/lib/legal";
 import { COURSE_MODEL, TIER_BENEFITS } from "@/lib/entitlements";
 import type { PackageConsent } from "@/lib/payments.functions";
 import { useServerFn } from "@tanstack/react-start";
-// PayPal is intentionally NOT rendered: the existing PayPal integration is a
-// recurring subscription product, which contradicts our one-time prepaid
-// packages. The plan IDs below are preserved for a future one-time order flow.
+// PayPal is offered next to Stripe only when the server confirms credentials
+// + webhook are configured (see src/lib/paypal-plans.ts allowlist).
 import { StripeEmbeddedCheckout } from "./StripeEmbeddedCheckout";
+import { PayPalSubscribeButton } from "./PayPalSubscribeButton";
 import { LeadCaptureModal } from "./LeadCaptureModal";
 import { resumeLead } from "@/lib/leads.functions";
 import { ensureUtmsCaptured } from "@/lib/utm";
 import { markCheckoutStarted, markCheckoutAbandoned } from "@/lib/lead-recovery.functions";
+import type { EnrollmentProfile } from "@/lib/enrollment-profile";
 
 
 type Duration = "1" | "3" | "6";
 
-// Legacy PayPal recurring plan IDs are preserved in src/lib/paypal-legacy.ts.
+// Retired PayPal plan IDs are kept (history only) in src/lib/paypal-legacy.ts.
 
 // Recurring subscription prices (USD): the full selected period is charged
 // today and renews automatically for the same period until canceled.
@@ -116,6 +117,8 @@ export function PricingPlans() {
   const [resumeWelcome, setResumeWelcome] = useState<string | null>(null);
   const [resumeError, setResumeError] = useState<string | null>(null);
   const [resumeLoading, setResumeLoading] = useState(false);
+  const [resumedProfile, setResumedProfile] = useState<Partial<EnrollmentProfile> | undefined>();
+  const [resumeCode, setResumeCode] = useState<string | undefined>();
 
   const startCheckout = useServerFn(markCheckoutStarted);
   const abandonCheckout = useServerFn(markCheckoutAbandoned);
@@ -125,6 +128,8 @@ export function PricingPlans() {
   // Every purchase path — card or international transfer — goes through the
   // same lead capture + legal acknowledgements before any payment page opens.
   const openLeadCapture = (tier: "live" | "complete", method: "stripe" | "wise" = "stripe") => {
+    setResumedProfile(undefined);
+    setResumeCode(undefined);
     ensureUtmsCaptured();
     const priceId = STRIPE_PRICES[tier][duration];
     const planIntended = `${tier}__${duration}m`;
@@ -185,10 +190,13 @@ export function PricingPlans() {
         setResumeError(null);
         setDuration(safeDuration);
         setResumeWelcome(result.fullName?.split(" ")[0] ?? null);
-        setActiveCheckout({
+        setResumedProfile(result.profile);
+        setResumeCode(code);
+        setPendingPlan({
           priceId: STRIPE_PRICES[parsedTier][safeDuration],
-          leadId: result.leadId,
-          email: result.email,
+          label: `${parsedTier === "complete" ? "Complete Course Access" : "International Online Course"} (${safeDuration} month${safeDuration === "1" ? "" : "s"})`,
+          planIntended: `${parsedTier}__${safeDuration}m`,
+          method: "stripe",
         });
         document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
       })
@@ -236,6 +244,8 @@ export function PricingPlans() {
     <section id="pricing" className="max-w-6xl mx-auto px-6 py-24">
       {pendingPlan && !activeCheckout && (
         <LeadCaptureModal
+          initialProfile={resumedProfile}
+          resumeCode={resumeCode}
           planLabel={pendingPlan.label}
           planIntended={pendingPlan.planIntended}
           method={pendingPlan.method}
@@ -325,6 +335,18 @@ export function PricingPlans() {
                   leadId={activeCheckout.leadId}
                   consent={activeCheckout.consent}
                 />
+                {/* Renders nothing until PayPal credentials + webhook are configured server-side. */}
+                {(() => {
+                  const m = activeCheckout.priceId.match(/^(live|complete)_sub_(1|3|6)m_v1$/);
+                  return m ? (
+                    <PayPalSubscribeButton
+                      tier={m[1] as "live" | "complete"}
+                      durationMonths={Number(m[2]) as 1 | 3 | 6}
+                      leadId={activeCheckout.leadId}
+                      consent={activeCheckout.consent}
+                    />
+                  ) : null;
+                })()}
               </div>
             </div>
           </div>
@@ -524,7 +546,7 @@ export function PricingPlans() {
           discount on the value of the work.
         </p>
         <p className="text-sm text-primary/90">
-          The Founding Cohort begins September 1, 2026 and holds a maximum of{" "}
+          The Founding Cohort begins October 20, 2026 and holds a maximum of{" "}
           {COURSE_MODEL.cohort_max_active_students} active students. After it begins, admission
           continues only after a personal pedagogical review by Cuca Medina — a free place is
           never claimed automatically. If the cohort is full or under review, you can join the

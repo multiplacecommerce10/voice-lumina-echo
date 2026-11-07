@@ -3,15 +3,18 @@
 // so what you review is byte-for-byte what gets sent.
 
 import {
+  buildCourseNameHtml,
   buildEmailButton,
   buildEmailDocument,
+  buildEmailFooter,
   buildEmailHero,
   EMAIL_BRAND,
   escapeHtml,
 } from "@/lib/email-branding";
 
+
 export const RESUME_BASE_URL = "https://voice-lumina-echo.lovable.app/";
-export const COURSE_NAME = "The Power of Conscious Voice — Tecendo Som";
+export const COURSE_NAME = "The Power of Conscious Voice";
 
 export function planLabel(planIntended: string | null): string {
   if (!planIntended) return "Your enrollment";
@@ -24,6 +27,11 @@ export function planLabel(planIntended: string | null): string {
 
 export function buildResumeUrl(resumeCode: string | null, leadId: string): string {
   return `${RESUME_BASE_URL}?resume=${resumeCode ?? ""}&lead=${leadId}&utm_source=recovery&utm_medium=email&utm_campaign=abandoned_checkout#pricing`;
+}
+
+/** Opt-out link shown only in the recovery email footer. */
+export function buildUnsubscribeUrl(resumeCode: string | null, leadId: string): string {
+  return `${RESUME_BASE_URL}unsubscribe?lead=${encodeURIComponent(leadId)}&code=${encodeURIComponent(resumeCode ?? "")}`;
 }
 
 export type RecoveryEmailInput = {
@@ -41,6 +49,7 @@ export type RecoveryEmailDraft = {
   greetingLine: string;
   planText: string;
   resumeUrl: string;
+  unsubscribeUrl: string;
   subject: string;
   bodyText: string;
   bodyHtml: string;
@@ -52,6 +61,7 @@ export function buildRecoveryEmail(input: RecoveryEmailInput): RecoveryEmailDraf
   const greetingName = firstName || "there";
   const planText = planLabel(input.planIntended);
   const resumeUrl = buildResumeUrl(input.resumeCode, input.leadId);
+  const unsubscribeUrl = buildUnsubscribeUrl(input.resumeCode, input.leadId);
 
   const subject = `${greetingName}, your place in The Power of Conscious Voice is waiting for you`;
   const bodyText = [
@@ -68,10 +78,14 @@ export function buildRecoveryEmail(input: RecoveryEmailInput): RecoveryEmailDraf
     "Should any question arise, simply reply to this message. I read every email personally and will be glad to help.",
     "",
     "With warmth,",
-    "Cuca Medina — Tecendo Som",
+    "Cuca Medina",
+    "— Tecendo Som Team",
+    "",
+    "If you no longer wish to receive these reminders, you can unsubscribe at any time:",
+    unsubscribeUrl,
   ].join("\n");
 
-  const bodyHtml = buildRecoveryHtml({ greetingName, planText, resumeUrl });
+  const bodyHtml = buildRecoveryHtml({ greetingName, planText, resumeUrl, unsubscribeUrl });
 
   return {
     courseName: COURSE_NAME,
@@ -81,6 +95,7 @@ export function buildRecoveryEmail(input: RecoveryEmailInput): RecoveryEmailDraf
     greetingLine: `Dear ${greetingName},`,
     planText,
     resumeUrl,
+    unsubscribeUrl,
     subject,
     bodyText,
     bodyHtml,
@@ -91,11 +106,12 @@ function buildRecoveryHtml(props: {
   greetingName: string;
   planText: string;
   resumeUrl: string;
+  unsubscribeUrl: string;
 }): string {
   const bodyInner = `
 <p style="font-family:${EMAIL_BRAND.fontSans};font-size:16px;line-height:1.6;color:${EMAIL_BRAND.ink};margin:0 0 18px;">Dear ${escapeHtml(props.greetingName)},</p>
 
-<p style="font-family:${EMAIL_BRAND.fontSans};font-size:16px;line-height:1.6;color:${EMAIL_BRAND.ink};margin:0 0 18px;">It was a pleasure to see you begin your enrollment in <strong style="color:${EMAIL_BRAND.ink};">${EMAIL_BRAND.courseNameFull}</strong>. I noticed the final step is still open, and I would not want you to miss your place in the cohort.</p>
+<p style="font-family:${EMAIL_BRAND.fontSans};font-size:16px;line-height:1.6;color:${EMAIL_BRAND.ink};margin:0 0 18px;">It was a pleasure to see you begin your enrollment in ${buildCourseNameHtml()}. I noticed the final step is still open, and I would not want you to miss your place in the cohort.</p>
 
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${EMAIL_BRAND.cream};border-radius:12px;margin:20px 0;border:1px solid ${EMAIL_BRAND.border};">
   <tr>
@@ -112,17 +128,16 @@ ${buildEmailButton("Resume my enrollment", props.resumeUrl)}
 
 <p style="font-family:${EMAIL_BRAND.fontSans};font-size:15px;line-height:1.6;color:${EMAIL_BRAND.inkLight};margin:24px 0 0;">Should any question arise, simply reply to this message. I read every email personally and will be glad to help.</p>
 
-<p style="font-family:${EMAIL_BRAND.fontSans};font-size:15px;line-height:1.6;color:${EMAIL_BRAND.inkLight};margin:18px 0 0;">With warmth,<br />Cuca Medina — Tecendo Som</p>
+<p style="font-family:${EMAIL_BRAND.fontSans};font-size:15px;line-height:1.6;color:${EMAIL_BRAND.inkLight};margin:18px 0 0;">With warmth,<br />Cuca Medina<br />— Tecendo Som Team</p>
 `.trim();
 
   return buildEmailDocument({
     previewText: "Your place in the cohort is still reserved",
     hero: buildEmailHero({
       headline: "Your place is waiting for you",
-      subheadline: EMAIL_BRAND.courseNameFull,
-      greetingName: props.greetingName,
     }),
     bodyHtml: bodyInner,
+    footerHtml: buildEmailFooter({ unsubscribeUrl: props.unsubscribeUrl }),
   });
 }
 

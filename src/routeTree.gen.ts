@@ -9,53 +9,66 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
-import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
-import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
-import { Route as MembershipRouteImport } from './routes/membership'
-import { Route as McpRouteImport } from './routes/mcp'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DebugTaskadeRouteImport } from './routes/debug.taskade'
-import { Route as DebugSubscriptionsRouteImport } from './routes/debug.subscriptions'
-import { Route as DebugLeadsRouteImport } from './routes/debug.leads'
-import { Route as DebugFictitiousRouteImport } from './routes/debug.fictitious'
-import { Route as DebugEmailPreviewRouteImport } from './routes/debug.email-preview'
-import { Route as DebugConfirmationEmailRouteImport } from './routes/debug.confirmation-email'
-import { Route as DebugClassRemindersRouteImport } from './routes/debug.class-reminders'
-import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
-import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as MembershipRouteImport } from './routes/membership'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as ScholarshipLoginRouteImport } from './routes/scholarship-login'
+import { Route as ScholarshipResultRouteImport } from './routes/scholarship-result'
+import { Route as ScholarshipsRouteImport } from './routes/scholarships'
+import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedMembersRouteImport } from './routes/_authenticated/members'
+import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiMemberAssistantRouteImport } from './routes/api/member-assistant'
+import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
+import { Route as DebugClassRemindersRouteImport } from './routes/debug.class-reminders'
+import { Route as DebugConfirmationEmailRouteImport } from './routes/debug.confirmation-email'
+import { Route as DebugEmailPreviewRouteImport } from './routes/debug.email-preview'
+import { Route as DebugEmailSamplesRouteImport } from './routes/debug.email-samples'
+import { Route as DebugFictitiousRouteImport } from './routes/debug.fictitious'
+import { Route as DebugLeadsRouteImport } from './routes/debug.leads'
+import { Route as DebugSubscriptionsRouteImport } from './routes/debug.subscriptions'
+import { Route as DebugTaskadeRouteImport } from './routes/debug.taskade'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
-import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
-import { Route as ApiPublicPaymentsReconcileAccessRouteImport } from './routes/api/public/payments/reconcile-access'
-import { Route as ApiPublicLeadsRecoverAbandonedRouteImport } from './routes/api/public/leads/recover-abandoned'
-import { Route as ApiPublicHooksClassRemindersRouteImport } from './routes/api/public/hooks/class-reminders'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedAdminApplicationsRouteImport } from './routes/_authenticated/admin.applications'
+import { Route as AuthenticatedAdminClassesRouteImport } from './routes/_authenticated/admin.classes'
+import { Route as AuthenticatedAdminCourseRouteImport } from './routes/_authenticated/admin.course'
+import { Route as AuthenticatedAdminEnrollmentsRouteImport } from './routes/_authenticated/admin.enrollments'
+import { Route as AuthenticatedAdminFoundationsRouteImport } from './routes/_authenticated/admin.foundations'
+import { Route as AuthenticatedAdminPortfoliosRouteImport } from './routes/_authenticated/admin.portfolios'
+import { Route as AuthenticatedAdminProgramsRouteImport } from './routes/_authenticated/admin.programs'
+import { Route as AuthenticatedAdminSlotsRouteImport } from './routes/_authenticated/admin.slots'
+import { Route as AuthenticatedMembersIndexRouteImport } from './routes/_authenticated/members.index'
+import { Route as AuthenticatedMembersAssistantRouteImport } from './routes/_authenticated/members.assistant'
+import { Route as AuthenticatedMembersClassesRouteImport } from './routes/_authenticated/members.classes'
+import { Route as AuthenticatedMembersFoundationsRouteImport } from './routes/_authenticated/members.foundations'
+import { Route as AuthenticatedMembersPortfolioRouteImport } from './routes/_authenticated/members.portfolio'
+import { Route as AuthenticatedMembersSessionsRouteImport } from './routes/_authenticated/members.sessions'
+import { Route as AuthenticatedMembersCourseIndexRouteImport } from './routes/_authenticated/members.course.index'
+import { Route as AuthenticatedMembersCourseLessonIdRouteImport } from './routes/_authenticated/members.course.$lessonId'
 import { Route as ApiPublicHooksBillingRemindersRouteImport } from './routes/api/public/hooks/billing-reminders'
+import { Route as ApiPublicHooksClassRemindersRouteImport } from './routes/api/public/hooks/class-reminders'
+import { Route as ApiPublicLeadsRecoverAbandonedRouteImport } from './routes/api/public/leads/recover-abandoned'
+import { Route as ApiPublicLeadsUnsubscribeRouteImport } from './routes/api/public/leads/unsubscribe'
+import { Route as ApiPublicPaymentsReconcileAccessRouteImport } from './routes/api/public/payments/reconcile-access'
+import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
+import { Route as ApiPublicPaypalWebhookEnvRouteImport } from './routes/api/public/paypal/webhook.$env'
 
-const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
-  id: '/terms-of-service',
-  path: '/terms-of-service',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RefundPolicyRoute = RefundPolicyRouteImport.update({
-  id: '/refund-policy',
-  path: '/refund-policy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
-  id: '/privacy-policy',
-  path: '/privacy-policy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MembershipRoute = MembershipRouteImport.update({
-  id: '/membership',
-  path: '/membership',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const McpRoute = McpRouteImport.update({
-  id: '/mcp',
-  path: '/mcp',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -63,54 +76,54 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DebugTaskadeRoute = DebugTaskadeRouteImport.update({
-  id: '/debug/taskade',
-  path: '/debug/taskade',
+const MembershipRoute = MembershipRouteImport.update({
+  id: '/membership',
+  path: '/membership',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DebugSubscriptionsRoute = DebugSubscriptionsRouteImport.update({
-  id: '/debug/subscriptions',
-  path: '/debug/subscriptions',
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DebugLeadsRoute = DebugLeadsRouteImport.update({
-  id: '/debug/leads',
-  path: '/debug/leads',
+const RefundPolicyRoute = RefundPolicyRouteImport.update({
+  id: '/refund-policy',
+  path: '/refund-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DebugFictitiousRoute = DebugFictitiousRouteImport.update({
-  id: '/debug/fictitious',
-  path: '/debug/fictitious',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DebugEmailPreviewRoute = DebugEmailPreviewRouteImport.update({
-  id: '/debug/email-preview',
-  path: '/debug/email-preview',
+const ScholarshipLoginRoute = ScholarshipLoginRouteImport.update({
+  id: '/scholarship-login',
+  path: '/scholarship-login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DebugConfirmationEmailRoute = DebugConfirmationEmailRouteImport.update({
-  id: '/debug/confirmation-email',
-  path: '/debug/confirmation-email',
+const ScholarshipResultRoute = ScholarshipResultRouteImport.update({
+  id: '/scholarship-result',
+  path: '/scholarship-result',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DebugClassRemindersRoute = DebugClassRemindersRouteImport.update({
-  id: '/debug/class-reminders',
-  path: '/debug/class-reminders',
+const ScholarshipsRoute = ScholarshipsRouteImport.update({
+  id: '/scholarships',
+  path: '/scholarships',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
-  id: '/checkout/return',
-  path: '/checkout/return',
+const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
+  id: '/terms-of-service',
+  path: '/terms-of-service',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiChatRoute = ApiChatRouteImport.update({
-  id: '/api/chat',
-  path: '/api/chat',
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
@@ -119,27 +132,180 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
     path: '/.well-known/oauth-protected-resource',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMembersRoute = AuthenticatedMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiChatRoute = ApiChatRouteImport.update({
+  id: '/api/chat',
+  path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMemberAssistantRoute = ApiMemberAssistantRouteImport.update({
+  id: '/api/member-assistant',
+  path: '/api/member-assistant',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
+  id: '/checkout/return',
+  path: '/checkout/return',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebugClassRemindersRoute = DebugClassRemindersRouteImport.update({
+  id: '/debug/class-reminders',
+  path: '/debug/class-reminders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebugConfirmationEmailRoute = DebugConfirmationEmailRouteImport.update({
+  id: '/debug/confirmation-email',
+  path: '/debug/confirmation-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebugEmailPreviewRoute = DebugEmailPreviewRouteImport.update({
+  id: '/debug/email-preview',
+  path: '/debug/email-preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebugEmailSamplesRoute = DebugEmailSamplesRouteImport.update({
+  id: '/debug/email-samples',
+  path: '/debug/email-samples',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebugFictitiousRoute = DebugFictitiousRouteImport.update({
+  id: '/debug/fictitious',
+  path: '/debug/fictitious',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebugLeadsRoute = DebugLeadsRouteImport.update({
+  id: '/debug/leads',
+  path: '/debug/leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebugSubscriptionsRoute = DebugSubscriptionsRouteImport.update({
+  id: '/debug/subscriptions',
+  path: '/debug/subscriptions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebugTaskadeRoute = DebugTaskadeRouteImport.update({
+  id: '/debug/taskade',
+  path: '/debug/taskade',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicPaymentsWebhookRoute =
-  ApiPublicPaymentsWebhookRouteImport.update({
-    id: '/api/public/payments/webhook',
-    path: '/api/public/payments/webhook',
-    getParentRoute: () => rootRouteImport,
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedAdminApplicationsRoute =
+  AuthenticatedAdminApplicationsRouteImport.update({
+    id: '/applications',
+    path: '/applications',
+    getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
-const ApiPublicPaymentsReconcileAccessRoute =
-  ApiPublicPaymentsReconcileAccessRouteImport.update({
-    id: '/api/public/payments/reconcile-access',
-    path: '/api/public/payments/reconcile-access',
-    getParentRoute: () => rootRouteImport,
+const AuthenticatedAdminClassesRoute =
+  AuthenticatedAdminClassesRouteImport.update({
+    id: '/classes',
+    path: '/classes',
+    getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
-const ApiPublicLeadsRecoverAbandonedRoute =
-  ApiPublicLeadsRecoverAbandonedRouteImport.update({
-    id: '/api/public/leads/recover-abandoned',
-    path: '/api/public/leads/recover-abandoned',
+const AuthenticatedAdminCourseRoute =
+  AuthenticatedAdminCourseRouteImport.update({
+    id: '/course',
+    path: '/course',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminEnrollmentsRoute =
+  AuthenticatedAdminEnrollmentsRouteImport.update({
+    id: '/enrollments',
+    path: '/enrollments',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminFoundationsRoute =
+  AuthenticatedAdminFoundationsRouteImport.update({
+    id: '/foundations',
+    path: '/foundations',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminPortfoliosRoute =
+  AuthenticatedAdminPortfoliosRouteImport.update({
+    id: '/portfolios',
+    path: '/portfolios',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminProgramsRoute =
+  AuthenticatedAdminProgramsRouteImport.update({
+    id: '/programs',
+    path: '/programs',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminSlotsRoute = AuthenticatedAdminSlotsRouteImport.update({
+  id: '/slots',
+  path: '/slots',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedMembersIndexRoute =
+  AuthenticatedMembersIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedMembersRoute,
+  } as any)
+const AuthenticatedMembersAssistantRoute =
+  AuthenticatedMembersAssistantRouteImport.update({
+    id: '/assistant',
+    path: '/assistant',
+    getParentRoute: () => AuthenticatedMembersRoute,
+  } as any)
+const AuthenticatedMembersClassesRoute =
+  AuthenticatedMembersClassesRouteImport.update({
+    id: '/classes',
+    path: '/classes',
+    getParentRoute: () => AuthenticatedMembersRoute,
+  } as any)
+const AuthenticatedMembersFoundationsRoute =
+  AuthenticatedMembersFoundationsRouteImport.update({
+    id: '/foundations',
+    path: '/foundations',
+    getParentRoute: () => AuthenticatedMembersRoute,
+  } as any)
+const AuthenticatedMembersPortfolioRoute =
+  AuthenticatedMembersPortfolioRouteImport.update({
+    id: '/portfolio',
+    path: '/portfolio',
+    getParentRoute: () => AuthenticatedMembersRoute,
+  } as any)
+const AuthenticatedMembersSessionsRoute =
+  AuthenticatedMembersSessionsRouteImport.update({
+    id: '/sessions',
+    path: '/sessions',
+    getParentRoute: () => AuthenticatedMembersRoute,
+  } as any)
+const AuthenticatedMembersCourseIndexRoute =
+  AuthenticatedMembersCourseIndexRouteImport.update({
+    id: '/course/',
+    path: '/course/',
+    getParentRoute: () => AuthenticatedMembersRoute,
+  } as any)
+const AuthenticatedMembersCourseLessonIdRoute =
+  AuthenticatedMembersCourseLessonIdRouteImport.update({
+    id: '/course/$lessonId',
+    path: '/course/$lessonId',
+    getParentRoute: () => AuthenticatedMembersRoute,
+  } as any)
+const ApiPublicHooksBillingRemindersRoute =
+  ApiPublicHooksBillingRemindersRouteImport.update({
+    id: '/api/public/hooks/billing-reminders',
+    path: '/api/public/hooks/billing-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksClassRemindersRoute =
@@ -148,10 +314,34 @@ const ApiPublicHooksClassRemindersRoute =
     path: '/api/public/hooks/class-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicHooksBillingRemindersRoute =
-  ApiPublicHooksBillingRemindersRouteImport.update({
-    id: '/api/public/hooks/billing-reminders',
-    path: '/api/public/hooks/billing-reminders',
+const ApiPublicLeadsRecoverAbandonedRoute =
+  ApiPublicLeadsRecoverAbandonedRouteImport.update({
+    id: '/api/public/leads/recover-abandoned',
+    path: '/api/public/leads/recover-abandoned',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicLeadsUnsubscribeRoute =
+  ApiPublicLeadsUnsubscribeRouteImport.update({
+    id: '/api/public/leads/unsubscribe',
+    path: '/api/public/leads/unsubscribe',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicPaymentsReconcileAccessRoute =
+  ApiPublicPaymentsReconcileAccessRouteImport.update({
+    id: '/api/public/payments/reconcile-access',
+    path: '/api/public/payments/reconcile-access',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicPaymentsWebhookRoute =
+  ApiPublicPaymentsWebhookRouteImport.update({
+    id: '/api/public/payments/webhook',
+    path: '/api/public/payments/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicPaypalWebhookEnvRoute =
+  ApiPublicPaypalWebhookEnvRouteImport.update({
+    id: '/api/public/paypal/webhook/$env',
+    path: '/api/public/paypal/webhook/$env',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -162,23 +352,51 @@ export interface FileRoutesByFullPath {
   '/membership': typeof MembershipRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/refund-policy': typeof RefundPolicyRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/scholarship-login': typeof ScholarshipLoginRoute
+  '/scholarship-result': typeof ScholarshipResultRoute
+  '/scholarships': typeof ScholarshipsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/members': typeof AuthenticatedMembersRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/api/member-assistant': typeof ApiMemberAssistantRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/debug/class-reminders': typeof DebugClassRemindersRoute
   '/debug/confirmation-email': typeof DebugConfirmationEmailRoute
   '/debug/email-preview': typeof DebugEmailPreviewRoute
+  '/debug/email-samples': typeof DebugEmailSamplesRoute
   '/debug/fictitious': typeof DebugFictitiousRoute
   '/debug/leads': typeof DebugLeadsRoute
   '/debug/subscriptions': typeof DebugSubscriptionsRoute
   '/debug/taskade': typeof DebugTaskadeRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/admin/applications': typeof AuthenticatedAdminApplicationsRoute
+  '/admin/classes': typeof AuthenticatedAdminClassesRoute
+  '/admin/course': typeof AuthenticatedAdminCourseRoute
+  '/admin/enrollments': typeof AuthenticatedAdminEnrollmentsRoute
+  '/admin/foundations': typeof AuthenticatedAdminFoundationsRoute
+  '/admin/portfolios': typeof AuthenticatedAdminPortfoliosRoute
+  '/admin/programs': typeof AuthenticatedAdminProgramsRoute
+  '/admin/slots': typeof AuthenticatedAdminSlotsRoute
+  '/members/assistant': typeof AuthenticatedMembersAssistantRoute
+  '/members/classes': typeof AuthenticatedMembersClassesRoute
+  '/members/foundations': typeof AuthenticatedMembersFoundationsRoute
+  '/members/portfolio': typeof AuthenticatedMembersPortfolioRoute
+  '/members/sessions': typeof AuthenticatedMembersSessionsRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/members/': typeof AuthenticatedMembersIndexRoute
+  '/members/course/$lessonId': typeof AuthenticatedMembersCourseLessonIdRoute
   '/api/public/hooks/billing-reminders': typeof ApiPublicHooksBillingRemindersRoute
   '/api/public/hooks/class-reminders': typeof ApiPublicHooksClassRemindersRoute
   '/api/public/leads/recover-abandoned': typeof ApiPublicLeadsRecoverAbandonedRoute
+  '/api/public/leads/unsubscribe': typeof ApiPublicLeadsUnsubscribeRoute
   '/api/public/payments/reconcile-access': typeof ApiPublicPaymentsReconcileAccessRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/members/course/': typeof AuthenticatedMembersCourseIndexRoute
+  '/api/public/paypal/webhook/$env': typeof ApiPublicPaypalWebhookEnvRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -187,49 +405,104 @@ export interface FileRoutesByTo {
   '/membership': typeof MembershipRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/refund-policy': typeof RefundPolicyRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/scholarship-login': typeof ScholarshipLoginRoute
+  '/scholarship-result': typeof ScholarshipResultRoute
+  '/scholarships': typeof ScholarshipsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/member-assistant': typeof ApiMemberAssistantRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/debug/class-reminders': typeof DebugClassRemindersRoute
   '/debug/confirmation-email': typeof DebugConfirmationEmailRoute
   '/debug/email-preview': typeof DebugEmailPreviewRoute
+  '/debug/email-samples': typeof DebugEmailSamplesRoute
   '/debug/fictitious': typeof DebugFictitiousRoute
   '/debug/leads': typeof DebugLeadsRoute
   '/debug/subscriptions': typeof DebugSubscriptionsRoute
   '/debug/taskade': typeof DebugTaskadeRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/admin/applications': typeof AuthenticatedAdminApplicationsRoute
+  '/admin/classes': typeof AuthenticatedAdminClassesRoute
+  '/admin/course': typeof AuthenticatedAdminCourseRoute
+  '/admin/enrollments': typeof AuthenticatedAdminEnrollmentsRoute
+  '/admin/foundations': typeof AuthenticatedAdminFoundationsRoute
+  '/admin/portfolios': typeof AuthenticatedAdminPortfoliosRoute
+  '/admin/programs': typeof AuthenticatedAdminProgramsRoute
+  '/admin/slots': typeof AuthenticatedAdminSlotsRoute
+  '/members/assistant': typeof AuthenticatedMembersAssistantRoute
+  '/members/classes': typeof AuthenticatedMembersClassesRoute
+  '/members/foundations': typeof AuthenticatedMembersFoundationsRoute
+  '/members/portfolio': typeof AuthenticatedMembersPortfolioRoute
+  '/members/sessions': typeof AuthenticatedMembersSessionsRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
+  '/members': typeof AuthenticatedMembersIndexRoute
+  '/members/course/$lessonId': typeof AuthenticatedMembersCourseLessonIdRoute
   '/api/public/hooks/billing-reminders': typeof ApiPublicHooksBillingRemindersRoute
   '/api/public/hooks/class-reminders': typeof ApiPublicHooksClassRemindersRoute
   '/api/public/leads/recover-abandoned': typeof ApiPublicLeadsRecoverAbandonedRoute
+  '/api/public/leads/unsubscribe': typeof ApiPublicLeadsUnsubscribeRoute
   '/api/public/payments/reconcile-access': typeof ApiPublicPaymentsReconcileAccessRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/members/course': typeof AuthenticatedMembersCourseIndexRoute
+  '/api/public/paypal/webhook/$env': typeof ApiPublicPaypalWebhookEnvRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/membership': typeof MembershipRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/refund-policy': typeof RefundPolicyRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/scholarship-login': typeof ScholarshipLoginRoute
+  '/scholarship-result': typeof ScholarshipResultRoute
+  '/scholarships': typeof ScholarshipsRoute
   '/terms-of-service': typeof TermsOfServiceRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/members': typeof AuthenticatedMembersRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/api/member-assistant': typeof ApiMemberAssistantRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/debug/class-reminders': typeof DebugClassRemindersRoute
   '/debug/confirmation-email': typeof DebugConfirmationEmailRoute
   '/debug/email-preview': typeof DebugEmailPreviewRoute
+  '/debug/email-samples': typeof DebugEmailSamplesRoute
   '/debug/fictitious': typeof DebugFictitiousRoute
   '/debug/leads': typeof DebugLeadsRoute
   '/debug/subscriptions': typeof DebugSubscriptionsRoute
   '/debug/taskade': typeof DebugTaskadeRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/_authenticated/admin/applications': typeof AuthenticatedAdminApplicationsRoute
+  '/_authenticated/admin/classes': typeof AuthenticatedAdminClassesRoute
+  '/_authenticated/admin/course': typeof AuthenticatedAdminCourseRoute
+  '/_authenticated/admin/enrollments': typeof AuthenticatedAdminEnrollmentsRoute
+  '/_authenticated/admin/foundations': typeof AuthenticatedAdminFoundationsRoute
+  '/_authenticated/admin/portfolios': typeof AuthenticatedAdminPortfoliosRoute
+  '/_authenticated/admin/programs': typeof AuthenticatedAdminProgramsRoute
+  '/_authenticated/admin/slots': typeof AuthenticatedAdminSlotsRoute
+  '/_authenticated/members/assistant': typeof AuthenticatedMembersAssistantRoute
+  '/_authenticated/members/classes': typeof AuthenticatedMembersClassesRoute
+  '/_authenticated/members/foundations': typeof AuthenticatedMembersFoundationsRoute
+  '/_authenticated/members/portfolio': typeof AuthenticatedMembersPortfolioRoute
+  '/_authenticated/members/sessions': typeof AuthenticatedMembersSessionsRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/members/': typeof AuthenticatedMembersIndexRoute
+  '/_authenticated/members/course/$lessonId': typeof AuthenticatedMembersCourseLessonIdRoute
   '/api/public/hooks/billing-reminders': typeof ApiPublicHooksBillingRemindersRoute
   '/api/public/hooks/class-reminders': typeof ApiPublicHooksClassRemindersRoute
   '/api/public/leads/recover-abandoned': typeof ApiPublicLeadsRecoverAbandonedRoute
+  '/api/public/leads/unsubscribe': typeof ApiPublicLeadsUnsubscribeRoute
   '/api/public/payments/reconcile-access': typeof ApiPublicPaymentsReconcileAccessRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/_authenticated/members/course/': typeof AuthenticatedMembersCourseIndexRoute
+  '/api/public/paypal/webhook/$env': typeof ApiPublicPaypalWebhookEnvRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -240,23 +513,51 @@ export interface FileRouteTypes {
     | '/membership'
     | '/privacy-policy'
     | '/refund-policy'
+    | '/reset-password'
+    | '/scholarship-login'
+    | '/scholarship-result'
+    | '/scholarships'
     | '/terms-of-service'
+    | '/unsubscribe'
     | '/.well-known/oauth-protected-resource'
+    | '/admin'
+    | '/members'
     | '/api/chat'
+    | '/api/member-assistant'
     | '/checkout/return'
     | '/debug/class-reminders'
     | '/debug/confirmation-email'
     | '/debug/email-preview'
+    | '/debug/email-samples'
     | '/debug/fictitious'
     | '/debug/leads'
     | '/debug/subscriptions'
     | '/debug/taskade'
     | '/.lovable/oauth/consent'
+    | '/admin/applications'
+    | '/admin/classes'
+    | '/admin/course'
+    | '/admin/enrollments'
+    | '/admin/foundations'
+    | '/admin/portfolios'
+    | '/admin/programs'
+    | '/admin/slots'
+    | '/members/assistant'
+    | '/members/classes'
+    | '/members/foundations'
+    | '/members/portfolio'
+    | '/members/sessions'
+    | '/admin/'
+    | '/members/'
+    | '/members/course/$lessonId'
     | '/api/public/hooks/billing-reminders'
     | '/api/public/hooks/class-reminders'
     | '/api/public/leads/recover-abandoned'
+    | '/api/public/leads/unsubscribe'
     | '/api/public/payments/reconcile-access'
     | '/api/public/payments/webhook'
+    | '/members/course/'
+    | '/api/public/paypal/webhook/$env'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -265,64 +566,127 @@ export interface FileRouteTypes {
     | '/membership'
     | '/privacy-policy'
     | '/refund-policy'
+    | '/reset-password'
+    | '/scholarship-login'
+    | '/scholarship-result'
+    | '/scholarships'
     | '/terms-of-service'
+    | '/unsubscribe'
     | '/.well-known/oauth-protected-resource'
     | '/api/chat'
+    | '/api/member-assistant'
     | '/checkout/return'
     | '/debug/class-reminders'
     | '/debug/confirmation-email'
     | '/debug/email-preview'
+    | '/debug/email-samples'
     | '/debug/fictitious'
     | '/debug/leads'
     | '/debug/subscriptions'
     | '/debug/taskade'
     | '/.lovable/oauth/consent'
+    | '/admin/applications'
+    | '/admin/classes'
+    | '/admin/course'
+    | '/admin/enrollments'
+    | '/admin/foundations'
+    | '/admin/portfolios'
+    | '/admin/programs'
+    | '/admin/slots'
+    | '/members/assistant'
+    | '/members/classes'
+    | '/members/foundations'
+    | '/members/portfolio'
+    | '/members/sessions'
+    | '/admin'
+    | '/members'
+    | '/members/course/$lessonId'
     | '/api/public/hooks/billing-reminders'
     | '/api/public/hooks/class-reminders'
     | '/api/public/leads/recover-abandoned'
+    | '/api/public/leads/unsubscribe'
     | '/api/public/payments/reconcile-access'
     | '/api/public/payments/webhook'
+    | '/members/course'
+    | '/api/public/paypal/webhook/$env'
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/login'
     | '/mcp'
     | '/membership'
     | '/privacy-policy'
     | '/refund-policy'
+    | '/reset-password'
+    | '/scholarship-login'
+    | '/scholarship-result'
+    | '/scholarships'
     | '/terms-of-service'
+    | '/unsubscribe'
     | '/.well-known/oauth-protected-resource'
+    | '/_authenticated/admin'
+    | '/_authenticated/members'
     | '/api/chat'
+    | '/api/member-assistant'
     | '/checkout/return'
     | '/debug/class-reminders'
     | '/debug/confirmation-email'
     | '/debug/email-preview'
+    | '/debug/email-samples'
     | '/debug/fictitious'
     | '/debug/leads'
     | '/debug/subscriptions'
     | '/debug/taskade'
     | '/.lovable/oauth/consent'
+    | '/_authenticated/admin/applications'
+    | '/_authenticated/admin/classes'
+    | '/_authenticated/admin/course'
+    | '/_authenticated/admin/enrollments'
+    | '/_authenticated/admin/foundations'
+    | '/_authenticated/admin/portfolios'
+    | '/_authenticated/admin/programs'
+    | '/_authenticated/admin/slots'
+    | '/_authenticated/members/assistant'
+    | '/_authenticated/members/classes'
+    | '/_authenticated/members/foundations'
+    | '/_authenticated/members/portfolio'
+    | '/_authenticated/members/sessions'
+    | '/_authenticated/admin/'
+    | '/_authenticated/members/'
+    | '/_authenticated/members/course/$lessonId'
     | '/api/public/hooks/billing-reminders'
     | '/api/public/hooks/class-reminders'
     | '/api/public/leads/recover-abandoned'
+    | '/api/public/leads/unsubscribe'
     | '/api/public/payments/reconcile-access'
     | '/api/public/payments/webhook'
+    | '/_authenticated/members/course/'
+    | '/api/public/paypal/webhook/$env'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
   McpRoute: typeof McpRoute
   MembershipRoute: typeof MembershipRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   RefundPolicyRoute: typeof RefundPolicyRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  ScholarshipLoginRoute: typeof ScholarshipLoginRoute
+  ScholarshipResultRoute: typeof ScholarshipResultRoute
+  ScholarshipsRoute: typeof ScholarshipsRoute
   TermsOfServiceRoute: typeof TermsOfServiceRoute
+  UnsubscribeRoute: typeof UnsubscribeRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiMemberAssistantRoute: typeof ApiMemberAssistantRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   DebugClassRemindersRoute: typeof DebugClassRemindersRoute
   DebugConfirmationEmailRoute: typeof DebugConfirmationEmailRoute
   DebugEmailPreviewRoute: typeof DebugEmailPreviewRoute
+  DebugEmailSamplesRoute: typeof DebugEmailSamplesRoute
   DebugFictitiousRoute: typeof DebugFictitiousRoute
   DebugLeadsRoute: typeof DebugLeadsRoute
   DebugSubscriptionsRoute: typeof DebugSubscriptionsRoute
@@ -331,45 +695,26 @@ export interface RootRouteChildren {
   ApiPublicHooksBillingRemindersRoute: typeof ApiPublicHooksBillingRemindersRoute
   ApiPublicHooksClassRemindersRoute: typeof ApiPublicHooksClassRemindersRoute
   ApiPublicLeadsRecoverAbandonedRoute: typeof ApiPublicLeadsRecoverAbandonedRoute
+  ApiPublicLeadsUnsubscribeRoute: typeof ApiPublicLeadsUnsubscribeRoute
   ApiPublicPaymentsReconcileAccessRoute: typeof ApiPublicPaymentsReconcileAccessRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
+  ApiPublicPaypalWebhookEnvRoute: typeof ApiPublicPaypalWebhookEnvRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/terms-of-service': {
-      id: '/terms-of-service'
-      path: '/terms-of-service'
-      fullPath: '/terms-of-service'
-      preLoaderRoute: typeof TermsOfServiceRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/refund-policy': {
-      id: '/refund-policy'
-      path: '/refund-policy'
-      fullPath: '/refund-policy'
-      preLoaderRoute: typeof RefundPolicyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy-policy': {
-      id: '/privacy-policy'
-      path: '/privacy-policy'
-      fullPath: '/privacy-policy'
-      preLoaderRoute: typeof PrivacyPolicyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/membership': {
-      id: '/membership'
-      path: '/membership'
-      fullPath: '/membership'
-      preLoaderRoute: typeof MembershipRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mcp': {
-      id: '/mcp'
-      path: '/mcp'
-      fullPath: '/mcp'
-      preLoaderRoute: typeof McpRouteImport
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -379,74 +724,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/debug/taskade': {
-      id: '/debug/taskade'
-      path: '/debug/taskade'
-      fullPath: '/debug/taskade'
-      preLoaderRoute: typeof DebugTaskadeRouteImport
+    '/membership': {
+      id: '/membership'
+      path: '/membership'
+      fullPath: '/membership'
+      preLoaderRoute: typeof MembershipRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/debug/subscriptions': {
-      id: '/debug/subscriptions'
-      path: '/debug/subscriptions'
-      fullPath: '/debug/subscriptions'
-      preLoaderRoute: typeof DebugSubscriptionsRouteImport
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/debug/leads': {
-      id: '/debug/leads'
-      path: '/debug/leads'
-      fullPath: '/debug/leads'
-      preLoaderRoute: typeof DebugLeadsRouteImport
+    '/refund-policy': {
+      id: '/refund-policy'
+      path: '/refund-policy'
+      fullPath: '/refund-policy'
+      preLoaderRoute: typeof RefundPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/debug/fictitious': {
-      id: '/debug/fictitious'
-      path: '/debug/fictitious'
-      fullPath: '/debug/fictitious'
-      preLoaderRoute: typeof DebugFictitiousRouteImport
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/debug/email-preview': {
-      id: '/debug/email-preview'
-      path: '/debug/email-preview'
-      fullPath: '/debug/email-preview'
-      preLoaderRoute: typeof DebugEmailPreviewRouteImport
+    '/scholarship-login': {
+      id: '/scholarship-login'
+      path: '/scholarship-login'
+      fullPath: '/scholarship-login'
+      preLoaderRoute: typeof ScholarshipLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/debug/confirmation-email': {
-      id: '/debug/confirmation-email'
-      path: '/debug/confirmation-email'
-      fullPath: '/debug/confirmation-email'
-      preLoaderRoute: typeof DebugConfirmationEmailRouteImport
+    '/scholarship-result': {
+      id: '/scholarship-result'
+      path: '/scholarship-result'
+      fullPath: '/scholarship-result'
+      preLoaderRoute: typeof ScholarshipResultRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/debug/class-reminders': {
-      id: '/debug/class-reminders'
-      path: '/debug/class-reminders'
-      fullPath: '/debug/class-reminders'
-      preLoaderRoute: typeof DebugClassRemindersRouteImport
+    '/scholarships': {
+      id: '/scholarships'
+      path: '/scholarships'
+      fullPath: '/scholarships'
+      preLoaderRoute: typeof ScholarshipsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/checkout/return': {
-      id: '/checkout/return'
-      path: '/checkout/return'
-      fullPath: '/checkout/return'
-      preLoaderRoute: typeof CheckoutReturnRouteImport
+    '/terms-of-service': {
+      id: '/terms-of-service'
+      path: '/terms-of-service'
+      fullPath: '/terms-of-service'
+      preLoaderRoute: typeof TermsOfServiceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/chat': {
-      id: '/api/chat'
-      path: '/api/chat'
-      fullPath: '/api/chat'
-      preLoaderRoute: typeof ApiChatRouteImport
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.well-known/oauth-protected-resource': {
@@ -456,6 +801,97 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/members': {
+      id: '/_authenticated/members'
+      path: '/members'
+      fullPath: '/members'
+      preLoaderRoute: typeof AuthenticatedMembersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/chat': {
+      id: '/api/chat'
+      path: '/api/chat'
+      fullPath: '/api/chat'
+      preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/member-assistant': {
+      id: '/api/member-assistant'
+      path: '/api/member-assistant'
+      fullPath: '/api/member-assistant'
+      preLoaderRoute: typeof ApiMemberAssistantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout/return': {
+      id: '/checkout/return'
+      path: '/checkout/return'
+      fullPath: '/checkout/return'
+      preLoaderRoute: typeof CheckoutReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/debug/class-reminders': {
+      id: '/debug/class-reminders'
+      path: '/debug/class-reminders'
+      fullPath: '/debug/class-reminders'
+      preLoaderRoute: typeof DebugClassRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/debug/confirmation-email': {
+      id: '/debug/confirmation-email'
+      path: '/debug/confirmation-email'
+      fullPath: '/debug/confirmation-email'
+      preLoaderRoute: typeof DebugConfirmationEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/debug/email-preview': {
+      id: '/debug/email-preview'
+      path: '/debug/email-preview'
+      fullPath: '/debug/email-preview'
+      preLoaderRoute: typeof DebugEmailPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/debug/email-samples': {
+      id: '/debug/email-samples'
+      path: '/debug/email-samples'
+      fullPath: '/debug/email-samples'
+      preLoaderRoute: typeof DebugEmailSamplesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/debug/fictitious': {
+      id: '/debug/fictitious'
+      path: '/debug/fictitious'
+      fullPath: '/debug/fictitious'
+      preLoaderRoute: typeof DebugFictitiousRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/debug/leads': {
+      id: '/debug/leads'
+      path: '/debug/leads'
+      fullPath: '/debug/leads'
+      preLoaderRoute: typeof DebugLeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/debug/subscriptions': {
+      id: '/debug/subscriptions'
+      path: '/debug/subscriptions'
+      fullPath: '/debug/subscriptions'
+      preLoaderRoute: typeof DebugSubscriptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/debug/taskade': {
+      id: '/debug/taskade'
+      path: '/debug/taskade'
+      fullPath: '/debug/taskade'
+      preLoaderRoute: typeof DebugTaskadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
       path: '/.lovable/oauth/consent'
@@ -463,25 +899,130 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/payments/webhook': {
-      id: '/api/public/payments/webhook'
-      path: '/api/public/payments/webhook'
-      fullPath: '/api/public/payments/webhook'
-      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
     }
-    '/api/public/payments/reconcile-access': {
-      id: '/api/public/payments/reconcile-access'
-      path: '/api/public/payments/reconcile-access'
-      fullPath: '/api/public/payments/reconcile-access'
-      preLoaderRoute: typeof ApiPublicPaymentsReconcileAccessRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/admin/applications': {
+      id: '/_authenticated/admin/applications'
+      path: '/applications'
+      fullPath: '/admin/applications'
+      preLoaderRoute: typeof AuthenticatedAdminApplicationsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
     }
-    '/api/public/leads/recover-abandoned': {
-      id: '/api/public/leads/recover-abandoned'
-      path: '/api/public/leads/recover-abandoned'
-      fullPath: '/api/public/leads/recover-abandoned'
-      preLoaderRoute: typeof ApiPublicLeadsRecoverAbandonedRouteImport
+    '/_authenticated/admin/classes': {
+      id: '/_authenticated/admin/classes'
+      path: '/classes'
+      fullPath: '/admin/classes'
+      preLoaderRoute: typeof AuthenticatedAdminClassesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/course': {
+      id: '/_authenticated/admin/course'
+      path: '/course'
+      fullPath: '/admin/course'
+      preLoaderRoute: typeof AuthenticatedAdminCourseRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/enrollments': {
+      id: '/_authenticated/admin/enrollments'
+      path: '/enrollments'
+      fullPath: '/admin/enrollments'
+      preLoaderRoute: typeof AuthenticatedAdminEnrollmentsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/foundations': {
+      id: '/_authenticated/admin/foundations'
+      path: '/foundations'
+      fullPath: '/admin/foundations'
+      preLoaderRoute: typeof AuthenticatedAdminFoundationsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/portfolios': {
+      id: '/_authenticated/admin/portfolios'
+      path: '/portfolios'
+      fullPath: '/admin/portfolios'
+      preLoaderRoute: typeof AuthenticatedAdminPortfoliosRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/programs': {
+      id: '/_authenticated/admin/programs'
+      path: '/programs'
+      fullPath: '/admin/programs'
+      preLoaderRoute: typeof AuthenticatedAdminProgramsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/slots': {
+      id: '/_authenticated/admin/slots'
+      path: '/slots'
+      fullPath: '/admin/slots'
+      preLoaderRoute: typeof AuthenticatedAdminSlotsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/members/': {
+      id: '/_authenticated/members/'
+      path: '/'
+      fullPath: '/members/'
+      preLoaderRoute: typeof AuthenticatedMembersIndexRouteImport
+      parentRoute: typeof AuthenticatedMembersRoute
+    }
+    '/_authenticated/members/assistant': {
+      id: '/_authenticated/members/assistant'
+      path: '/assistant'
+      fullPath: '/members/assistant'
+      preLoaderRoute: typeof AuthenticatedMembersAssistantRouteImport
+      parentRoute: typeof AuthenticatedMembersRoute
+    }
+    '/_authenticated/members/classes': {
+      id: '/_authenticated/members/classes'
+      path: '/classes'
+      fullPath: '/members/classes'
+      preLoaderRoute: typeof AuthenticatedMembersClassesRouteImport
+      parentRoute: typeof AuthenticatedMembersRoute
+    }
+    '/_authenticated/members/foundations': {
+      id: '/_authenticated/members/foundations'
+      path: '/foundations'
+      fullPath: '/members/foundations'
+      preLoaderRoute: typeof AuthenticatedMembersFoundationsRouteImport
+      parentRoute: typeof AuthenticatedMembersRoute
+    }
+    '/_authenticated/members/portfolio': {
+      id: '/_authenticated/members/portfolio'
+      path: '/portfolio'
+      fullPath: '/members/portfolio'
+      preLoaderRoute: typeof AuthenticatedMembersPortfolioRouteImport
+      parentRoute: typeof AuthenticatedMembersRoute
+    }
+    '/_authenticated/members/sessions': {
+      id: '/_authenticated/members/sessions'
+      path: '/sessions'
+      fullPath: '/members/sessions'
+      preLoaderRoute: typeof AuthenticatedMembersSessionsRouteImport
+      parentRoute: typeof AuthenticatedMembersRoute
+    }
+    '/_authenticated/members/course/': {
+      id: '/_authenticated/members/course/'
+      path: '/course'
+      fullPath: '/members/course/'
+      preLoaderRoute: typeof AuthenticatedMembersCourseIndexRouteImport
+      parentRoute: typeof AuthenticatedMembersRoute
+    }
+    '/_authenticated/members/course/$lessonId': {
+      id: '/_authenticated/members/course/$lessonId'
+      path: '/course/$lessonId'
+      fullPath: '/members/course/$lessonId'
+      preLoaderRoute: typeof AuthenticatedMembersCourseLessonIdRouteImport
+      parentRoute: typeof AuthenticatedMembersRoute
+    }
+    '/api/public/hooks/billing-reminders': {
+      id: '/api/public/hooks/billing-reminders'
+      path: '/api/public/hooks/billing-reminders'
+      fullPath: '/api/public/hooks/billing-reminders'
+      preLoaderRoute: typeof ApiPublicHooksBillingRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/class-reminders': {
@@ -491,31 +1032,133 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksClassRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/billing-reminders': {
-      id: '/api/public/hooks/billing-reminders'
-      path: '/api/public/hooks/billing-reminders'
-      fullPath: '/api/public/hooks/billing-reminders'
-      preLoaderRoute: typeof ApiPublicHooksBillingRemindersRouteImport
+    '/api/public/leads/recover-abandoned': {
+      id: '/api/public/leads/recover-abandoned'
+      path: '/api/public/leads/recover-abandoned'
+      fullPath: '/api/public/leads/recover-abandoned'
+      preLoaderRoute: typeof ApiPublicLeadsRecoverAbandonedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/leads/unsubscribe': {
+      id: '/api/public/leads/unsubscribe'
+      path: '/api/public/leads/unsubscribe'
+      fullPath: '/api/public/leads/unsubscribe'
+      preLoaderRoute: typeof ApiPublicLeadsUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payments/reconcile-access': {
+      id: '/api/public/payments/reconcile-access'
+      path: '/api/public/payments/reconcile-access'
+      fullPath: '/api/public/payments/reconcile-access'
+      preLoaderRoute: typeof ApiPublicPaymentsReconcileAccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payments/webhook': {
+      id: '/api/public/payments/webhook'
+      path: '/api/public/payments/webhook'
+      fullPath: '/api/public/payments/webhook'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/paypal/webhook/$env': {
+      id: '/api/public/paypal/webhook/$env'
+      path: '/api/public/paypal/webhook/$env'
+      fullPath: '/api/public/paypal/webhook/$env'
+      preLoaderRoute: typeof ApiPublicPaypalWebhookEnvRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminApplicationsRoute: typeof AuthenticatedAdminApplicationsRoute
+  AuthenticatedAdminClassesRoute: typeof AuthenticatedAdminClassesRoute
+  AuthenticatedAdminCourseRoute: typeof AuthenticatedAdminCourseRoute
+  AuthenticatedAdminEnrollmentsRoute: typeof AuthenticatedAdminEnrollmentsRoute
+  AuthenticatedAdminFoundationsRoute: typeof AuthenticatedAdminFoundationsRoute
+  AuthenticatedAdminPortfoliosRoute: typeof AuthenticatedAdminPortfoliosRoute
+  AuthenticatedAdminProgramsRoute: typeof AuthenticatedAdminProgramsRoute
+  AuthenticatedAdminSlotsRoute: typeof AuthenticatedAdminSlotsRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminApplicationsRoute: AuthenticatedAdminApplicationsRoute,
+  AuthenticatedAdminClassesRoute: AuthenticatedAdminClassesRoute,
+  AuthenticatedAdminCourseRoute: AuthenticatedAdminCourseRoute,
+  AuthenticatedAdminEnrollmentsRoute: AuthenticatedAdminEnrollmentsRoute,
+  AuthenticatedAdminFoundationsRoute: AuthenticatedAdminFoundationsRoute,
+  AuthenticatedAdminPortfoliosRoute: AuthenticatedAdminPortfoliosRoute,
+  AuthenticatedAdminProgramsRoute: AuthenticatedAdminProgramsRoute,
+  AuthenticatedAdminSlotsRoute: AuthenticatedAdminSlotsRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
+interface AuthenticatedMembersRouteChildren {
+  AuthenticatedMembersAssistantRoute: typeof AuthenticatedMembersAssistantRoute
+  AuthenticatedMembersClassesRoute: typeof AuthenticatedMembersClassesRoute
+  AuthenticatedMembersFoundationsRoute: typeof AuthenticatedMembersFoundationsRoute
+  AuthenticatedMembersPortfolioRoute: typeof AuthenticatedMembersPortfolioRoute
+  AuthenticatedMembersSessionsRoute: typeof AuthenticatedMembersSessionsRoute
+  AuthenticatedMembersIndexRoute: typeof AuthenticatedMembersIndexRoute
+  AuthenticatedMembersCourseLessonIdRoute: typeof AuthenticatedMembersCourseLessonIdRoute
+  AuthenticatedMembersCourseIndexRoute: typeof AuthenticatedMembersCourseIndexRoute
+}
+
+const AuthenticatedMembersRouteChildren: AuthenticatedMembersRouteChildren = {
+  AuthenticatedMembersAssistantRoute: AuthenticatedMembersAssistantRoute,
+  AuthenticatedMembersClassesRoute: AuthenticatedMembersClassesRoute,
+  AuthenticatedMembersFoundationsRoute: AuthenticatedMembersFoundationsRoute,
+  AuthenticatedMembersPortfolioRoute: AuthenticatedMembersPortfolioRoute,
+  AuthenticatedMembersSessionsRoute: AuthenticatedMembersSessionsRoute,
+  AuthenticatedMembersIndexRoute: AuthenticatedMembersIndexRoute,
+  AuthenticatedMembersCourseLessonIdRoute:
+    AuthenticatedMembersCourseLessonIdRoute,
+  AuthenticatedMembersCourseIndexRoute: AuthenticatedMembersCourseIndexRoute,
+}
+
+const AuthenticatedMembersRouteWithChildren =
+  AuthenticatedMembersRoute._addFileChildren(AuthenticatedMembersRouteChildren)
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedMembersRoute: typeof AuthenticatedMembersRouteWithChildren
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedMembersRoute: AuthenticatedMembersRouteWithChildren,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   LoginRoute: LoginRoute,
   McpRoute: McpRoute,
   MembershipRoute: MembershipRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   RefundPolicyRoute: RefundPolicyRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  ScholarshipLoginRoute: ScholarshipLoginRoute,
+  ScholarshipResultRoute: ScholarshipResultRoute,
+  ScholarshipsRoute: ScholarshipsRoute,
   TermsOfServiceRoute: TermsOfServiceRoute,
+  UnsubscribeRoute: UnsubscribeRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiMemberAssistantRoute: ApiMemberAssistantRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
   DebugClassRemindersRoute: DebugClassRemindersRoute,
   DebugConfirmationEmailRoute: DebugConfirmationEmailRoute,
   DebugEmailPreviewRoute: DebugEmailPreviewRoute,
+  DebugEmailSamplesRoute: DebugEmailSamplesRoute,
   DebugFictitiousRoute: DebugFictitiousRoute,
   DebugLeadsRoute: DebugLeadsRoute,
   DebugSubscriptionsRoute: DebugSubscriptionsRoute,
@@ -524,18 +1167,21 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksBillingRemindersRoute: ApiPublicHooksBillingRemindersRoute,
   ApiPublicHooksClassRemindersRoute: ApiPublicHooksClassRemindersRoute,
   ApiPublicLeadsRecoverAbandonedRoute: ApiPublicLeadsRecoverAbandonedRoute,
+  ApiPublicLeadsUnsubscribeRoute: ApiPublicLeadsUnsubscribeRoute,
   ApiPublicPaymentsReconcileAccessRoute: ApiPublicPaymentsReconcileAccessRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
+  ApiPublicPaypalWebhookEnvRoute: ApiPublicPaypalWebhookEnvRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

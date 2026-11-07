@@ -14,20 +14,43 @@ import { appendUtmsToUrl } from "@/lib/utm";
 
 export const Route = createFileRoute("/")({
   head: () => ({
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Course",
+          name: "The Power of Conscious Voice",
+          description:
+            "A live international voice training journey for singers, speakers, teachers and sensitive creators. Develop vocal presence, body awareness, resonance and expressive freedom.",
+          url: "https://consciousvoice.tecendosom.com/",
+          inLanguage: "en",
+          provider: { "@type": "Organization", name: "Tecendo Som", url: "https://consciousvoice.tecendosom.com/" },
+          instructor: { "@type": "Person", name: "Cuca Medina" },
+          hasCourseInstance: {
+            "@type": "CourseInstance",
+            courseMode: "online",
+            startDate: "2026-10-20",
+            instructor: { "@type": "Person", name: "Cuca Medina" },
+          },
+        }),
+      },
+    ],
     meta: [
-      { title: "The Power of Conscious Voice — with Cuca Medina | Tecendo Som" },
+      { title: "The Power of Conscious Voice — Live Voice Course with Cuca Medina" },
       {
         name: "description",
         content:
           "A live international voice training journey for singers, speakers, teachers and sensitive creators. Develop vocal presence, body awareness, resonance and expressive freedom.",
       },
-      { property: "og:title", content: "The Power of Conscious Voice — with Cuca Medina" },
+      { property: "og:title", content: "The Power of Conscious Voice — Live Voice Course with Cuca Medina" },
       {
         property: "og:description",
         content:
-          "Live international voice training with Cuca Medina. Tuesdays 9:30–11:00 AM São Paulo. Weekly 90-minute cohort classes, private sessions and a recorded Method Foundations Library. Founding Cohort begins September 1, 2026.",
+          "A live international voice training journey for singers, speakers, teachers and sensitive creators. Develop vocal presence, body awareness, resonance and expressive freedom.",
       },
       { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       {
         rel: "preconnect",
         href: "https://fonts.googleapis.com",
@@ -130,12 +153,12 @@ function Hero() {
               <span className="text-secondary">●</span> Weekly live 90-min classes
             </span>
             <span className="px-4 py-2 rounded-full glass-card text-foreground/80 mr-[5px] mb-[5px]">
-              <span className="text-primary">●</span> First class · September 1, 2026
+              <span className="text-primary">●</span> First class · October 20, 2026
             </span>
             <TimezoneConverter />
           </div>
           <p className="text-xs text-muted-foreground/80 max-w-xl leading-relaxed">
-            <span className="text-secondary">✦</span> In September, two special live sessions
+            <span className="text-secondary">✦</span> In October, two special live sessions
             deepen the journey — exploring the professional path of singing, sharing
             lived experience and strengthening our connection with the training.
           </p>
@@ -476,7 +499,7 @@ const formatItems = [
   { label: "Private student portal", icon: "◈" },
   { label: "Guided practices & materials", icon: "✦" },
   { label: "Real-time Q&A in class", icon: "✧" },
-  { label: "September 1, 2026 · Founding launch", icon: "♪" },
+  { label: "October 20, 2026 · Founding launch", icon: "♪" },
 ];
 
 function Format() {
@@ -717,7 +740,7 @@ const faqs = [
   },
   {
     q: "Is a seat guaranteed once I choose a plan?",
-    a: "No. The Founding Cohort begins September 1, 2026 with a maximum of 30 active students. Your place is confirmed only after payment is confirmed and admission is permitted. Once the cohort has begun, admission continues on a rolling basis only after a personal pedagogical review by Cuca Medina — an open number never reopens enrollment automatically. When the cohort is full, paused or under review, you are welcome to join the waiting list and request consideration.",
+    a: "No. The Founding Cohort begins October 20, 2026 with a maximum of 30 active students. Your place is confirmed only after payment is confirmed and admission is permitted. Once the cohort has begun, admission continues on a rolling basis only after a personal pedagogical review by Cuca Medina — an open number never reopens enrollment automatically. When the cohort is full, paused or under review, you are welcome to join the waiting list and request consideration.",
   },
   {
     q: "Do you offer scholarships?",

@@ -4,7 +4,7 @@ import { buildConfirmationEmail, DEFAULT_MEMBERSHIP_URL } from "@/lib/confirmati
 import { buildAccessCredentialsEmail } from "@/lib/access-credentials-email";
 import { buildRecoveryEmail } from "@/lib/recovery-email";
 
-const COURSE_START = "Tuesday, September 1, 2026";
+const COURSE_START = "Tuesday, October 20, 2026";
 
 export default defineTool({
   name: "preview_email",
@@ -48,6 +48,8 @@ export default defineTool({
         fullName: full_name,
         membershipUrl: DEFAULT_MEMBERSHIP_URL,
         tier,
+        username: "student@example.com",
+        password: "Cv-SamplePass1!",
       });
 
       const payload = {

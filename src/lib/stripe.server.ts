@@ -76,25 +76,18 @@ export async function verifyWebhook(
   }
   if (!timestamp || v1Signatures.length === 0) throw new Error("Invalid signature format");
 
-  const age = Math.abs(Date.now() / 1000 - Number(timestamp));
+  const numericTimestamp = Number(timestamp);
+  if (!/^\d+$/.test(timestamp) || !Number.isFinite(numericTimestamp)) {
+    throw new Error("Invalid webhook timestamp");
+  }
+  const age = Math.abs(Date.now() / 1000 - numericTimestamp);
   if (age > 300) throw new Error("Webhook timestamp too old");
 
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
+  // Stripe's async verifier uses its secure comparison and Worker-compatible crypto.
+  const event = await Stripe.webhooks.constructEventAsync(
+    body, signature, secret, 300, Stripe.createSubtleCryptoProvider(),
   );
-  const signed = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    new TextEncoder().encode(`${timestamp}.${body}`),
-  );
-  const expected = Buffer.from(new Uint8Array(signed)).toString("hex");
-
-  if (!v1Signatures.includes(expected)) throw new Error("Invalid webhook signature");
-
-  return JSON.parse(body);
+  if (event.livemode !== (env === "live")) throw new Error("Webhook environment mismatch");
+  return event;
 }
 

@@ -19,7 +19,7 @@ function formatUsd(amount: number | null): string | null {
 
 /** Renders the exact confirmation/receipt email for a lead WITHOUT sending anything. */
 export const previewConfirmationEmail = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         leadId: z.string().uuid().optional(),
@@ -94,7 +94,7 @@ export const previewConfirmationEmail = createServerFn({ method: "POST" })
       nextChargeAtFormatted: (sub?.current_period_end as string | null) ?? null,
       courseStartFormatted: courseStartLocal.full,
       nextClassFormatted: nextClassLocal.full,
-      membershipUrl: "https://consciousvoice.tecendosom.com/membership",
+      membershipUrl: "https://consciousvoice.tecendosom.com/members",
     };
 
     const draft = buildConfirmationEmail(draftInput);

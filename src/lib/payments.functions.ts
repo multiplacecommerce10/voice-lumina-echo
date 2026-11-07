@@ -12,6 +12,7 @@ import {
   tierFromLookupKey,
 } from "@/lib/subscription-catalog";
 import type { MemberSubscriptionRow } from "@/lib/subscription-state.server";
+import { validateStripeCatalogPrice, validateCheckoutAdmission } from "@/lib/checkout-validation";
 
 import {
   HISTORICAL_PRICE_KEYS,
@@ -35,7 +36,7 @@ export type PackageConsent = {
 
 
 export const createCheckoutSession = createServerFn({ method: "POST" })
-  .inputValidator((data: {
+  .validator((data: {
     priceId: string;
     customerEmail?: string;
     returnUrl: string;
@@ -56,13 +57,19 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
     if (data.environment !== "sandbox" && data.environment !== "live") {
       throw new Error("Invalid environment");
     }
-    if (data.leadId && !/^[a-f0-9-]{36}$/.test(data.leadId)) {
+    if (!data.leadId || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(data.leadId)) {
       throw new Error("Invalid leadId");
     }
     return data;
   })
   .handler(async ({ data }): Promise<CheckoutSessionResult> => {
     try {
+      if (!data.leadId) throw new Error("Please complete your enrollment details first.");
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: lead, error: leadError } = await supabaseAdmin.from("leads")
+        .select("id, email, admission_status").eq("id", data.leadId).maybeSingle();
+      if (leadError) throw new Error("Could not verify enrollment approval. Checkout was blocked.");
+      const customerEmail = validateCheckoutAdmission(lead, data.consent, Date.now());
       const stripe = createStripeClient(data.environment);
 
       const prices = await stripe.prices.list({ lookup_keys: [data.priceId], limit: 1 });
@@ -76,6 +83,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
         );
       }
       if (!stripePrice.active) throw new Error(`Price ${data.priceId} is not active.`);
+      validateStripeCatalogPrice(data.priceId, stripePrice);
 
       const productId = typeof stripePrice.product === "string"
         ? stripePrice.product
@@ -176,7 +184,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
           billing_mode: { type: "flexible" },
         },
         metadata,
-        ...(data.customerEmail && { customer_email: data.customerEmail }),
+        customer_email: customerEmail,
       } as any);
 
 
@@ -207,7 +215,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
  * Session id, retrieve it from Stripe and use the customer recorded on it.
  */
 export const createPortalSession = createServerFn({ method: "POST" })
-  .inputValidator((data: { sessionId: string; returnUrl?: string; environment: StripeEnv }) => {
+  .validator((data: { sessionId: string; returnUrl?: string; environment: StripeEnv }) => {
     if (!/^cs_(test|live)_[A-Za-z0-9]+$/.test(data.sessionId)) {
       throw new Error("Invalid sessionId");
     }
@@ -296,7 +304,7 @@ export type CheckoutSummary = {
 };
 
 export const getCheckoutSummary = createServerFn({ method: "POST" })
-  .inputValidator((data: { sessionId: string; environment: StripeEnv }) => {
+  .validator((data: { sessionId: string; environment: StripeEnv }) => {
     if (!/^cs_(test|live)_[A-Za-z0-9]+$/.test(data.sessionId)) {
       throw new Error("Invalid sessionId");
     }
@@ -364,7 +372,7 @@ export type PrepaidAccessSummary = {
 };
 
 export const getPrepaidAccessSummary = createServerFn({ method: "POST" })
-  .inputValidator((data: { sessionId: string; environment: StripeEnv }) => {
+  .validator((data: { sessionId: string; environment: StripeEnv }) => {
     if (!/^cs_(test|live)_[A-Za-z0-9]+$/.test(data.sessionId)) {
       throw new Error("Invalid sessionId");
     }
@@ -447,7 +455,7 @@ export type SubscriptionSummary = {
 };
 
 export const getSubscriptionSummary = createServerFn({ method: "POST" })
-  .inputValidator((data: { sessionId: string; environment: StripeEnv }) => {
+  .validator((data: { sessionId: string; environment: StripeEnv }) => {
     if (!/^cs_(test|live)_[A-Za-z0-9]+$/.test(data.sessionId)) {
       throw new Error("Invalid sessionId");
     }
@@ -478,11 +486,11 @@ export const getSubscriptionSummary = createServerFn({ method: "POST" })
       const price = item?.price ?? fallbackPrice;
       const product = price && typeof price.product !== "string" ? price.product : null;
       const lookupKey = price?.lookup_key ?? null;
-      const tier: SubscriptionSummary["tier"] = lookupKey?.startsWith("live_pkg_") || lookupKey?.startsWith("live_cohort_")
+      const tier: SubscriptionSummary["tier"] = tierFromLookupKey(lookupKey) ?? (lookupKey?.startsWith("live_pkg_") || lookupKey?.startsWith("live_cohort_")
         ? "live"
         : lookupKey?.startsWith("replay_pkg_") || lookupKey?.startsWith("replay_access_")
         ? "complete"
-        : null;
+        : null);
       const durationMatch = lookupKey?.match(/_(\d+)m$/);
 
       const periodEnd =
@@ -560,7 +568,7 @@ export type SubscriptionAccessSummary = {
 
 
 export const getSubscriptionAccessSummary = createServerFn({ method: "POST" })
-  .inputValidator((data: { sessionId: string; environment: StripeEnv }) => {
+  .validator((data: { sessionId: string; environment: StripeEnv }) => {
     if (!/^cs_(test|live)_[A-Za-z0-9]+$/.test(data.sessionId)) {
       throw new Error("Invalid sessionId");
     }

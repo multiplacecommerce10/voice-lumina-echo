@@ -7,7 +7,7 @@ const InputSchema = z.object({
 });
 
 export const translateTestimonials = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => InputSchema.parse(data))
+  .validator((data: unknown) => InputSchema.parse(data))
   .handler(async ({ data }) => {
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) {

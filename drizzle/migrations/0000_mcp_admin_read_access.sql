@@ -15,11 +15,7 @@ CREATE POLICY "Admins can see their own allowlist row"
   ON public.admin_emails FOR SELECT TO authenticated
   USING (email = lower(auth.jwt() ->> 'email'));
 
-INSERT INTO public.admin_emails (email) VALUES
-  ('cucamedinamusic@gmail.com'),
-  ('contact@tecendosom.com'),
-  ('cucamedina@gmail.com')
-ON CONFLICT (email) DO NOTHING;
+-- Personal allowlist seeds omitted from public backup; configure explicitly after restoration.
 
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean

@@ -1,5 +1,6 @@
-// Sends a weekly live-class reminder to Taskade 2 days before each class,
-// localized to every enrolled student's own timezone.
+// Sends a weekly live-class reminder 2 days before each class, localized to
+// every enrolled student's own timezone. Delivered directly via Hostinger
+// Agentic Mail (subscription mailbox) — Taskade was decommissioned.
 import {
   COURSE_START_UTC,
   formatClassInTimeZone,
@@ -201,7 +202,8 @@ export async function runClassReminderSweep(options?: {
     }
   }
 
-  const { forwardToTaskade } = await import("@/lib/taskade.server");
+  const { sendHostingerMail } = await import("@/lib/hostinger-mail.server");
+  const { buildReminderEmail } = await import("@/lib/email-branding");
 
   const seen = new Set<string>();
   for (const sub of subs ?? []) {
@@ -233,16 +235,32 @@ export async function runClassReminderSweep(options?: {
       { membershipUrl: (sub.membership_url as string | null) ?? null },
     );
 
-    const forward = await forwardToTaskade(
-      {
-        ...built.payload,
-        extra: { ...built.payload.extra, ...(options?.dryRun ? { dry_run: true } : {}) },
-      },
-      { flow: "class-reminder" },
-    );
+    let ok = false;
+    if (options?.dryRun) {
+      console.log(`[class-reminders] DRY-RUN would email ${email}: ${built.preview.subject}`);
+      ok = true;
+    } else {
+      const mail = buildReminderEmail({
+        previewText: built.preview.preheader,
+        headline: built.preview.subject,
+        paragraphs: built.preview.paragraphs,
+        ctaLabel: "Open my membership",
+        ctaUrl: built.payload.extra.cta_url as string | null,
+      });
+      const sent = await sendHostingerMail("subscription", {
+        to: email,
+        subject: built.preview.subject,
+        html: mail.html,
+        text: mail.text,
+      });
+      ok = sent.ok;
+      if (!sent.ok) {
+        console.error("[class-reminders] hostinger send failed:", sent.status, sent.message);
+      }
+    }
 
-    result.details.push({ email, timezone, ok: forward.ok });
-    if (forward.ok) result.sent++;
+    result.details.push({ email, timezone, ok });
+    if (ok) result.sent++;
     else result.failures++;
   }
 

@@ -34,7 +34,7 @@ function normalizeDateRange(data: z.infer<typeof logSearchSchema>) {
 
 /** Outbound class.weekly_reminder attempts, plus weekly aggregation for the admin panel. */
 export const getClassReminderLog = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => logSearchSchema.parse(input ?? {}))
+  .validator((input: unknown) => logSearchSchema.parse(input ?? {}))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -141,7 +141,7 @@ export const getClassReminderLog = createServerFn({ method: "POST" })
 
 /** Runs the class reminder sweep on demand (dry-run by default). */
 export const runClassReminderSweepNow = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         dryRun: z.boolean().optional().default(true),

@@ -4,16 +4,18 @@
 
 import {
   buildChecklistHtml,
+  buildCourseNameHtml,
   buildEmailButton,
   buildEmailDocument,
   buildEmailHero,
   EMAIL_BRAND,
   escapeHtml,
 } from "@/lib/email-branding";
+
 import { planLabel } from "@/lib/recovery-email";
 
 export const COURSE_NAME = "The Power of Conscious Voice — Tecendo Som";
-export const DEFAULT_MEMBERSHIP_URL = "https://thepowerofconsciousvoice.world/";
+export const DEFAULT_MEMBERSHIP_URL = "https://consciousvoice.tecendosom.com/members";
 
 export type ConfirmationEmailInput = {
   fullName: string | null;
@@ -50,7 +52,7 @@ export type ConfirmationEmailDraft = {
 function buildWelcomeChecklist(input: ConfirmationEmailInput): string[] {
   const isComplete = input.tier === "complete";
   const checklist: string[] = [
-    "Save the weekly live class in your calendar: Tuesdays, 90 minutes, starting September 1, 2026.",
+    "Save the weekly live class in your calendar: Tuesdays, 90 minutes, starting October 20, 2026.",
     "Log in to the member area to confirm your access and explore the Method Foundations Library.",
     "Book your first individual 30-minute session — it includes the 10-minute initial voice and expressive mapping.",
     "Join your first live class on time with your camera on and a quiet, private space.",
@@ -107,9 +109,6 @@ function buildFirstTimeBodyText(greetingName: string): string {
     "",
     "Warmly,",
     "Cuca Medina",
-    "The Power of Conscious Voice",
-    "Tecendo Som",
-    "Tecendo Som Team",
   ].join("\n");
 }
 
@@ -121,7 +120,7 @@ function buildFirstTimeBodyHtml(greetingName: string): string {
   return `
 <p style="${paragraphStyle}">Dear ${escapeHtml(greetingName)},</p>
 
-<p style="${paragraphStyle}">Your enrollment in The Power of Conscious Voice is officially confirmed.</p>
+<p style="${paragraphStyle}">Your enrollment in ${buildCourseNameHtml()} is officially confirmed.</p>
 
 <p style="${paragraphStyle}">I am truly happy to welcome you.</p>
 
@@ -135,9 +134,9 @@ function buildFirstTimeBodyHtml(greetingName: string): string {
 
 <p style="${closingStyle}">I look forward to accompanying you on this journey of vocal discovery, technical development and artistic expression.</p>
 
-<p style="${closingStyle}">Welcome to The Power of Conscious Voice.</p>
+<p style="${closingStyle}">Welcome to ${buildCourseNameHtml({ color: EMAIL_BRAND.inkLight, size: 17 })}.</p>
 
-<p style="${closingStyle}">Warmly,<br />Cuca Medina<br />The Power of Conscious Voice<br />Tecendo Som<br />Tecendo Som Team</p>
+<p style="${closingStyle}">Warmly,<br />Cuca Medina</p>
 `.trim();
 }
 
@@ -171,11 +170,7 @@ export function buildConfirmationEmail(input: ConfirmationEmailInput): Confirmat
     const bodyText = buildFirstTimeBodyText(greetingName);
     const bodyHtml = buildEmailDocument({
       previewText: "Enrollment Confirmed",
-      hero: buildEmailHero({
-        headline: "Enrollment Confirmed",
-        subheadline: "Welcome to The Power of Conscious Voice",
-        greetingName,
-      }),
+      hero: buildEmailHero({ headline: "Welcome to the course" }),
       bodyHtml: buildFirstTimeBodyHtml(greetingName),
     });
 
@@ -219,8 +214,8 @@ export function buildConfirmationEmail(input: ConfirmationEmailInput): Confirmat
     "",
     closing,
     "",
-    "With warmth,",
-    "Cuca Medina — Tecendo Som",
+    "Warmly,",
+    "Cuca Medina",
     "",
     "Priscila Medina Gubert — ME (Tecendo Som) | CNPJ 07.331.609/0001-92 | Avenida Orleães, 104, Porto Alegre, RS, Brazil",
     "Questions? Write to contact@tecendosom.com — we read every message.",
@@ -310,7 +305,7 @@ ${buildEmailButton("Go to member area", props.membershipUrl)}
 
 <p style="font-family:${EMAIL_BRAND.fontSans};font-size:15px;line-height:1.6;color:${EMAIL_BRAND.inkLight};margin:24px 0 0;">${escapeHtml(props.closing)}</p>
 
-<p style="font-family:${EMAIL_BRAND.fontSans};font-size:15px;line-height:1.6;color:${EMAIL_BRAND.inkLight};margin:18px 0 0;">With warmth,<br />Cuca Medina — Tecendo Som</p>
+<p style="font-family:${EMAIL_BRAND.fontSans};font-size:15px;line-height:1.6;color:${EMAIL_BRAND.inkLight};margin:18px 0 0;">Warmly,<br />Cuca Medina</p>
 `.trim();
 
   return buildEmailDocument({
@@ -318,7 +313,6 @@ ${buildEmailButton("Go to member area", props.membershipUrl)}
     hero: buildEmailHero({
       headline: heading,
       subheadline,
-      greetingName: props.greetingName,
     }),
     bodyHtml: bodyInner,
   });

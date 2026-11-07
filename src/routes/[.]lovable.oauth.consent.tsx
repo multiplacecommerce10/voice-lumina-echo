@@ -26,6 +26,12 @@ function oauth(): OAuthNamespace {
 
 export const Route = createFileRoute("/.lovable/oauth/consent")({
   ssr: false,
+  head: () => ({
+    meta: [
+      { title: "Authorize access — The Power of Conscious Voice" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   validateSearch: (s: Record<string, unknown>) => ({
     authorization_id: typeof s.authorization_id === "string" ? s.authorization_id : "",
   }),

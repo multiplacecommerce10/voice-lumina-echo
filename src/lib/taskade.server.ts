@@ -29,6 +29,15 @@ type ForwardPayload = {
   referrer?: string | null;
   occurred_at?: string;
   extra?: Record<string, unknown>;
+  // Ready-made email fields some flows read at top level (used verbatim by Taskade).
+  email_to?: string | null;
+  email_from?: string | null;
+  email_from_name?: string | null;
+  email_subject?: string | null;
+  email_body_html?: string | null;
+  email_body_text?: string | null;
+  email_format?: "html" | null;
+  sender_instruction?: string | null;
 };
 
 export type TaskadeForwardResult =
@@ -92,7 +101,7 @@ async function sleep(ms: number) {
 
 export async function forwardToTaskade(
   payload: ForwardPayload,
-  options?: { flow?: "enrollment" | "recovery" | "class-reminder" },
+  options?: { flow?: "enrollment" | "recovery" | "class-reminder" | "scholarship" },
 ): Promise<TaskadeForwardResult> {
   const correlationId = newCorrelationId();
   const startedAt = Date.now();
@@ -102,7 +111,9 @@ export async function forwardToTaskade(
       ? process.env.TASKADE_RECOVERY_WEBHOOK_URL ?? process.env.TASKADE_WEBHOOK_URL
       : flow === "class-reminder"
         ? process.env.TASKADE_CLASS_WEBHOOK_URL ?? process.env.TASKADE_WEBHOOK_URL
-        : process.env.TASKADE_WEBHOOK_URL;
+        : flow === "scholarship"
+          ? process.env.TASKADE_SCHOLARSHIP_WEBHOOK_URL ?? process.env.TASKADE_WEBHOOK_URL
+          : process.env.TASKADE_WEBHOOK_URL;
   const dryRun = isDryRunEnabled(payload);
 
   const parsedBody = {

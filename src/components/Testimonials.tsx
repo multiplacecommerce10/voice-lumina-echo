@@ -71,6 +71,22 @@ const testimonials: Testimonial[] = [
     en:
       "Taking classes with Professor Cuca was an enriching and refreshing experience because it allowed me to increase my self-esteem and self-confidence by presenting me with challenges that I overcame with the help of her guidance. She is a highly competent, committed, responsible, and kind professional. In addition, she applies active and innovative strategies that facilitate learning and help reduce stress and anxiety, promoting a state of relaxation.",
   },
+  {
+    name: "Elizabeth Jacques",
+    role: "Luthier · Cachoeirinha, Brazil",
+    quote:
+      "Fiz o curso de Técnica Vocal da professora Cuca e gostei muito!! Ela se preocupa com detalhes técnicos que outras escolas e professores nem sempre se aprofundam, como por exemplo a postura corporal na hora de cantar, respiração correta e técnicas perfeitas para se alcançar a afinação/tom desejados. Recomendo muito, excelente profissional, muito didática e empenhada em entregar o que o aluno precisa para avançar!",
+    en:
+      "I took Professor Cuca's Vocal Technique course and loved it!! She pays attention to technical details that other schools and teachers don't always explore in depth, such as body posture while singing, proper breathing, and precise techniques for reaching the desired pitch and tone. I highly recommend her: an excellent professional, a very clear teacher, and deeply committed to giving each student what they need to move forward!",
+  },
+  {
+    name: "Laura Tatsch",
+    role: "Student and singer · Cachoeirinha, Brazil",
+    quote:
+      "Antes de tudo, gostaria de agradecer à professora Cuca por tudo o que ela fez por mim até agora. Minha técnica vocal melhorou muito — meu apoio respiratório, meus melismas e minhas notas agudas evoluíram graças ao seu incrível conhecimento musical. Hoje consigo cantar com facilidade notas que antes eram difíceis para mim, usando a técnica e os ajustes corretos.",
+    en:
+      "First of all, I would like to thank teacher Cuca for everything she has done for me so far. My vocal technique has improved a lot—my breath support, runnings, and high notes have all improved thanks to her amazing knowledge of music. Now, I can sing with ease notes that I struggled with in the past, using the right technique and adjustments.",
+  },
 ];
 
 export function Testimonials() {

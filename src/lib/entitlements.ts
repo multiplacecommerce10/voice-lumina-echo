@@ -31,7 +31,7 @@ export const COURSE_MODEL = {
   certificate_eligibility_after_active_months: 6,
   certificate_requires_foundations_completion: true,
   certificate_requires_transformation_portfolio: true,
-  cohort_start_date: "2026-09-01",
+  cohort_start_date: "2026-10-20",
   cohort_max_active_students: 30,
   rolling_admission_requires_human_review: true,
   portfolio_name: "Conscious Voice Transformation Portfolio",

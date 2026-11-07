@@ -1,11 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { EnrollmentForm } from "./EnrollmentForm";
+import { PROFILE_STORAGE_KEY, profileSchema, type EnrollmentProfile } from "@/lib/enrollment-profile";
+import { Button } from "@/components/ui/button";
 import { captureLead } from "@/lib/leads.functions";
 import { ensureUtmsCaptured, getAttributionContext } from "@/lib/utm";
 import { LEGAL, LEGAL_VERSIONS } from "@/lib/legal";
 import type { PackageConsent } from "@/lib/payments.functions";
 
 interface Props {
+  initialProfile?: Partial<EnrollmentProfile>;
+  resumeCode?: string;
   planLabel: string;
   planIntended: string;
   /** "stripe" = embedded recurring card checkout · "wise" = manual, non-renewing bank transfer */
@@ -15,12 +21,18 @@ interface Props {
 }
 
 export function LeadCaptureModal({
+  initialProfile,
+  resumeCode,
   planLabel,
   planIntended,
   method = "stripe",
   onClose,
   onCaptured,
 }: Props) {
+  const capture = useServerFn(captureLead);
+  const [profile, setProfile] = useState<EnrollmentProfile | null>(null);
+  const [savedProfile, setSavedProfile] = useState(initialProfile);
+  useEffect(() => { if (initialProfile) { setSavedProfile(initialProfile); return; } try { const saved = sessionStorage.getItem(PROFILE_STORAGE_KEY); if (saved) setSavedProfile(JSON.parse(saved)); } catch { /* storage unavailable */ } }, [initialProfile]);
   const isWise = method === "wise";
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -35,6 +47,7 @@ export function LeadCaptureModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!profile || !profileSchema.safeParse(profile).success) { setError("Please complete all student details first."); return; }
     if (!acceptTerms) {
       setError("Please accept the Terms of Service and the Refund Policy to continue.");
       return;
@@ -63,11 +76,13 @@ export function LeadCaptureModal({
       ensureUtmsCaptured();
       // getAttributionContext() returns empty values without analytics/marketing consent.
       const { utms, landingUrl, referrer } = getAttributionContext();
-      const result = await captureLead({
+      const result = await capture({
         data: {
+          profile,
+          resumeCode,
           fullName: fullName.trim(),
           email: email.trim(),
-          phone: phone.trim() || null,
+          phone: phone.trim(),
           planIntended,
           utms,
           landingUrl,
@@ -97,7 +112,7 @@ export function LeadCaptureModal({
     >
       <div className="min-h-screen flex items-start justify-center p-4 sm:p-8">
         <div
-          className="relative w-full max-w-md bg-background rounded-2xl shadow-2xl p-6 sm:p-8"
+          className="relative w-full max-w-3xl bg-background rounded-2xl shadow-2xl p-6 sm:p-8"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -118,50 +133,9 @@ export function LeadCaptureModal({
             Card plans are charged in full for the period you choose and renew automatically until you cancel.
           </p>
 
+          {!profile ? <EnrollmentForm embedded initialProfile={savedProfile} onComplete={(value) => { setProfile(value); setFullName(value.fullName); setEmail(value.email); setPhone(value.phone); }} /> : <>
+          <div className="mb-4 text-sm text-foreground"><p>{fullName} · {email}</p><Button variant="link" onClick={() => { setSavedProfile(profile); setProfile(null); }}>Edit student details</Button></div>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Full name *</label>
-              <input
-                type="text"
-                required
-                minLength={2}
-                maxLength={120}
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Email *</label>
-              <input
-                type="email"
-                required
-                maxLength={160}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1.5">
-                WhatsApp{" "}
-                <span className="text-muted-foreground font-normal">(with country code)</span>
-              </label>
-              <input
-                type="tel"
-                placeholder="+55 11 99999-9999"
-                maxLength={40}
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Optional — used for enrollment and payment messages about your purchase.
-              </p>
-            </div>
-
             <div className="space-y-3 rounded-xl border border-border/60 p-4">
               <label className="flex items-start gap-2 text-sm cursor-pointer">
                 <input
@@ -233,7 +207,7 @@ export function LeadCaptureModal({
               </p>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={loading}
               className="w-full px-6 py-3 rounded-full bg-gradient-to-r from-primary to-[oklch(0.65_0.20_45)] text-primary-foreground font-semibold shadow-glow-gold hover:scale-[1.02] transition-transform disabled:opacity-60 disabled:cursor-not-allowed"
@@ -243,7 +217,7 @@ export function LeadCaptureModal({
                 : isWise
                   ? "Continue to international transfer →"
                   : "Continue to secure payment →"}
-            </button>
+            </Button>
 
             <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
               {isWise
@@ -254,6 +228,7 @@ export function LeadCaptureModal({
               {LEGAL.sellerName} · CNPJ {LEGAL.cnpj} · {LEGAL.addressFull} · {LEGAL.contactEmail}
             </p>
           </form>
+          </>}
         </div>
       </div>
     </div>

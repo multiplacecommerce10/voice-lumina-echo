@@ -7,11 +7,13 @@ export function LegalPage({
   title,
   subtitle,
   version,
+  eyebrow = "Legal",
   children,
 }: {
   title: string;
   subtitle: string;
-  version: string;
+  version?: string;
+  eyebrow?: string;
   children: ReactNode;
 }) {
   return (
@@ -37,12 +39,14 @@ export function LegalPage({
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-14 sm:py-20">
-        <p className="text-xs uppercase tracking-[0.3em] text-primary mb-3">Legal</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-primary mb-3">{eyebrow}</p>
         <h1 className="font-display text-4xl sm:text-5xl leading-tight">{title}</h1>
         <p className="mt-4 text-foreground/80 leading-relaxed">{subtitle}</p>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Effective date: {LEGAL.effectiveDate} · Version {version}
-        </p>
+        {version && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Effective date: {LEGAL.effectiveDate} · Version {version}
+          </p>
+        )}
 
         <div className="mt-10 space-y-10 legal-body">{children}</div>
 

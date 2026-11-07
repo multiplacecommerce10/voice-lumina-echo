@@ -110,6 +110,7 @@ function ChatWindow({
       <div className="border-t border-border/40 p-3">
         <PromptInput onSubmit={handleSubmit}>
           <PromptInputTextarea
+            aria-label="Ask a question about the course"
             ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}

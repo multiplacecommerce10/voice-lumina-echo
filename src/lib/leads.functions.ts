@@ -1,10 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { profileSchema, profileAnswers, profileFromAnswers, type EnrollmentProfile } from "@/lib/enrollment-profile";
 
 const captureLeadSchema = z.object({
+  profile: profileSchema,
+  resumeCode: z.string().regex(/^[A-Z2-9]{6,40}$/).optional(),
   fullName: z.string().trim().min(2).max(120),
   email: z.string().trim().email().max(160),
-  phone: z.string().trim().min(4).max(40).optional().nullable(),
+  phone: z.string().trim().min(4).max(40),
   planIntended: z.string().trim().max(120).optional().nullable(),
   utms: z
     .object({
@@ -31,16 +34,31 @@ const captureLeadSchema = z.object({
       marketingOptIn: z.boolean().optional(),
     })
     .optional(),
-});
+}).refine((value) => value.fullName === value.profile.fullName && value.email.toLowerCase() === value.profile.email.toLowerCase() && value.phone === value.profile.phone, "Contact details must match the student profile.");
 
 export const captureLead = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => captureLeadSchema.parse(input))
+  .validator((input: unknown) => captureLeadSchema.parse(input))
   .handler(async ({ data }): Promise<{ leadId: string; resumeCode: string } | { error: string }> => {
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { newResumeCode } = await import("@/lib/resume-code.server");
       const utms = data.utms ?? {};
       const resumeCode = newResumeCode();
+      const values = {
+        full_name: data.fullName,
+        email: data.email.toLowerCase(),
+        phone: data.phone,
+        plan_intended: data.planIntended ?? null,
+        answers: { ...profileAnswers(data.profile), legal_consent: data.consent },
+      };
+      if (data.resumeCode) {
+        const { data: existing } = await supabaseAdmin.from("leads").select("id, status, answers, resume_code").eq("resume_code", data.resumeCode).maybeSingle();
+        if (!existing || !["captured", "checkout_started", "abandoned"].includes(existing.status ?? "")) return { error: "This enrollment can no longer be resumed." };
+        const oldAnswers = z.record(z.string(), z.unknown()).safeParse(existing.answers);
+        const { error: updateError } = await supabaseAdmin.from("leads").update({ ...values, answers: { ...(oldAnswers.success ? oldAnswers.data : {}), ...values.answers } }).eq("id", existing.id).in("status", ["captured", "checkout_started", "abandoned"]);
+        if (updateError) return { error: "Could not save your details. Please try again." };
+        return { leadId: existing.id, resumeCode: data.resumeCode };
+      }
       const { data: row, error } = await supabaseAdmin
         .from("leads")
         .insert({
@@ -59,7 +77,7 @@ export const captureLead = createServerFn({ method: "POST" })
           fbclid: utms.fbclid ?? null,
           landing_url: data.landingUrl ?? null,
           referrer: data.referrer ?? null,
-          answers: data.consent ? { legal_consent: data.consent } : null,
+          answers: values.answers,
         })
         .select("id, resume_code")
         .single();
@@ -74,14 +92,14 @@ export const captureLead = createServerFn({ method: "POST" })
     }
   });
 
-const resumeSchema = z.object({ code: z.string().trim().min(6).max(40) });
+const resumeSchema = z.object({ code: z.string().trim().toUpperCase().regex(/^[A-Z2-9]{6,40}$/) });
 
 /**
  * Resolves a recovery-email resume code back into the exact point the lead
  * stopped at: their contact details and the plan they had selected.
  */
 export const resumeLead = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => resumeSchema.parse(input))
+  .validator((input: unknown) => resumeSchema.parse(input))
   .handler(
     async ({
       data,
@@ -93,6 +111,7 @@ export const resumeLead = createServerFn({ method: "POST" })
           phone: string | null;
           planIntended: string | null;
           status: string | null;
+          profile: Partial<EnrollmentProfile>;
         }
       | { error: string }
     > => {
@@ -100,11 +119,13 @@ export const resumeLead = createServerFn({ method: "POST" })
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { data: row, error } = await supabaseAdmin
           .from("leads")
-          .select("id, full_name, email, phone, plan_intended, status")
+          .select("id, full_name, email, phone, plan_intended, status, answers")
           .eq("resume_code", data.code.toUpperCase())
           .maybeSingle();
         if (error || !row) return { error: "We could not find that enrollment link." };
+        if (!["captured", "checkout_started", "abandoned"].includes(row.status ?? "")) return { error: "This enrollment can no longer be resumed." };
         return {
+          profile: profileFromAnswers({ fullName: row.full_name, email: row.email, phone: row.phone }, row.answers),
           leadId: row.id as string,
           fullName: row.full_name as string | null,
           email: row.email as string | null,

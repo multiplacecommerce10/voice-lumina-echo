@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { submitEnrollment } from "@/lib/enrollment.functions";
 import { ensureUtmsCaptured, getAttributionContext, utmsToString } from "@/lib/utm";
@@ -9,6 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { profileSchema, PROFILE_STORAGE_KEY, type EnrollmentProfile } from "@/lib/enrollment-profile";
+import { Button } from "@/components/ui/button";
 import { FlagIcon } from "@/components/ui/flag-icon";
 
 type Status = "idle" | "submitting" | "success" | "error";
@@ -20,7 +22,14 @@ const musicLevels = [
   "Advanced — performer / teacher / professional",
 ];
 
-export function EnrollmentForm() {
+export function EnrollmentForm({ initialProfile, onComplete, embedded = false }: { initialProfile?: Partial<EnrollmentProfile>; onComplete?: (profile: EnrollmentProfile) => void; embedded?: boolean }) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [restoredProfile, setRestoredProfile] = useState(initialProfile);
+  useEffect(() => {
+    if (initialProfile) { setRestoredProfile(initialProfile); return; }
+    try { const saved = sessionStorage.getItem(PROFILE_STORAGE_KEY); if (saved) setRestoredProfile(JSON.parse(saved)); } catch { /* storage unavailable */ }
+  }, [initialProfile]);
   const submit = useServerFn(submitEnrollment);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -105,6 +114,20 @@ export function EnrollmentForm() {
     return () => clearTimeout(timer);
   }, [countryIso]);
 
+  useEffect(() => {
+    if (!restoredProfile || !allCountries.length || !formRef.current) return;
+    const country = allCountries.find((c) => c.name === restoredProfile.country);
+    setCountryIso(country?.iso2 ?? "");
+    const dial = [...allCountries].sort((a, b) => b.dial.length - a.dial.length).find((c) => restoredProfile.phone?.startsWith(`${c.dial} `));
+    if (dial) setDialIso(dial.iso2);
+    for (const [key, value] of Object.entries(restoredProfile)) {
+      const element = formRef.current.elements.namedItem(key);
+      if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement) element.value = key === "phone" && dial ? String(value).slice(dial.dial.length).trim() : String(value ?? "");
+    }
+    const checked = profileSchema.safeParse(restoredProfile);
+    if (!checked.success) setFieldErrors(Object.fromEntries(checked.error.issues.map((issue) => [String(issue.path[0]), issue.message])));
+  }, [restoredProfile, allCountries]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (status === "submitting") return;
@@ -155,8 +178,18 @@ export function EnrollmentForm() {
       })(),
     };
 
+    const checked = profileSchema.safeParse(payload);
+    if (!checked.success) {
+      setFieldErrors(Object.fromEntries(checked.error.issues.map((issue) => [String(issue.path[0]), issue.message])));
+      setStatus("idle");
+      form.querySelector<HTMLElement>(`[name="${String(checked.error.issues[0]?.path[0])}"]`)?.focus();
+      return;
+    }
+    setFieldErrors({});
+    if (onComplete) { setStatus("idle"); onComplete(checked.data); return; }
     try {
       await submit({ data: payload });
+      try { sessionStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(checked.data)); } catch { /* storage unavailable */ }
       setStatus("success");
       form.reset();
       setTimeout(() => {
@@ -175,8 +208,8 @@ export function EnrollmentForm() {
   const hintCls = "text-xs text-muted-foreground/80 mt-1.5 italic";
 
   return (
-    <section id="enrollment-form" className="max-w-4xl mx-auto px-6 py-24">
-      <div className="text-center mb-10">
+    <section id={embedded ? "resumed-enrollment-form" : "enrollment-form"} className={embedded ? "w-full" : "max-w-4xl mx-auto px-6 py-24"}>
+      {!embedded && <div className="text-center mb-10">
         <p className="text-xs uppercase tracking-[0.3em] text-primary mb-3">
           Step 1 · Pre-Enrollment
         </p>
@@ -189,6 +222,7 @@ export function EnrollmentForm() {
         </p>
       </div>
 
+      }
       {status === "success" ? (
         <div className="glass-card rounded-3xl p-10 text-center ring-glow-gold">
           <div className="text-4xl text-primary mb-4">✦</div>
@@ -207,9 +241,10 @@ export function EnrollmentForm() {
           </a>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="glass-card rounded-3xl p-6 sm:p-10 space-y-6">
+        <form ref={formRef} noValidate onSubmit={handleSubmit} className={embedded ? "space-y-6" : "glass-card rounded-3xl p-6 sm:p-10 space-y-6"}>
+          {Object.keys(fieldErrors).length > 0 && <div role="alert" className="border border-destructive/50 bg-destructive/10 text-destructive rounded-lg p-4"><p className="font-semibold">Please complete the highlighted required details.</p><ul className="mt-2 space-y-1">{Object.entries(fieldErrors).map(([field, message]) => <li key={field}><a href={`#${field}`} onClick={(e) => { e.preventDefault(); formRef.current?.querySelector<HTMLElement>(`[id="${field}"]`)?.focus(); }} className="underline">{message}</a></li>)}</ul></div>}
           <div className="grid sm:grid-cols-2 gap-5">
-            <div>
+            <div className={fieldErrors.fullName ? "rounded-lg ring-2 ring-destructive/60 bg-destructive/5 p-2" : ""}>
               <label className={labelCls} htmlFor="fullName">
                 Full name *
               </label>
@@ -222,7 +257,7 @@ export function EnrollmentForm() {
                 placeholder="Your full name"
               />
             </div>
-            <div>
+            <div className={fieldErrors.birthDate ? "rounded-lg ring-2 ring-destructive/60 bg-destructive/5 p-2" : ""}>
               <label className={labelCls} htmlFor="birthDate">
                 Date of birth *
               </label>
@@ -231,7 +266,7 @@ export function EnrollmentForm() {
           </div>
 
           <div className="grid sm:grid-cols-2 gap-5">
-            <div>
+            <div className={fieldErrors.email ? "rounded-lg ring-2 ring-destructive/60 bg-destructive/5 p-2" : ""}>
               <label className={labelCls} htmlFor="email">
                 Email *
               </label>
@@ -245,7 +280,7 @@ export function EnrollmentForm() {
                 placeholder="you@example.com"
               />
             </div>
-            <div>
+            <div className={fieldErrors.phone ? "rounded-lg ring-2 ring-destructive/60 bg-destructive/5 p-2" : ""}>
               <label className={labelCls} htmlFor="phone">
                 Phone / WhatsApp *
               </label>
@@ -298,7 +333,7 @@ export function EnrollmentForm() {
           </div>
 
           <div className="grid sm:grid-cols-2 gap-5">
-            <div>
+            <div className={fieldErrors.country ? "rounded-lg ring-2 ring-destructive/60 bg-destructive/5 p-2" : ""}>
               <label className={labelCls} htmlFor="country">
                 Country *
               </label>
@@ -330,7 +365,7 @@ export function EnrollmentForm() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className={fieldErrors.city ? "rounded-lg ring-2 ring-destructive/60 bg-destructive/5 p-2" : ""}>
               <label className={labelCls} htmlFor="city">
                 City *
               </label>
@@ -392,33 +427,35 @@ export function EnrollmentForm() {
             </div>
           </div>
 
-          <div>
+          <div className={fieldErrors.address ? "rounded-lg ring-2 ring-destructive/60 bg-destructive/5 p-2" : ""}>
             <label className={labelCls} htmlFor="address">
-              Address
+              Address *
             </label>
             <input
               id="address"
               name="address"
+              required
               maxLength={300}
               className={inputCls}
               placeholder="Street, number, neighborhood, postal code"
             />
           </div>
 
-          <div>
+          <div className={fieldErrors.profession ? "rounded-lg ring-2 ring-destructive/60 bg-destructive/5 p-2" : ""}>
             <label className={labelCls} htmlFor="profession">
-              Profession
+              Profession *
             </label>
             <input
               id="profession"
               name="profession"
+              required
               maxLength={160}
               className={inputCls}
               placeholder="What do you do? (e.g. teacher, designer, student, singer…)"
             />
           </div>
 
-          <div>
+          <div className={fieldErrors.musicLevel ? "rounded-lg ring-2 ring-destructive/60 bg-destructive/5 p-2" : ""}>
             <label className={labelCls} htmlFor="musicLevel">
               Level of musical formation *
             </label>
@@ -434,13 +471,14 @@ export function EnrollmentForm() {
             </select>
           </div>
 
-          <div>
+          <div className={fieldErrors.academicExperience ? "rounded-lg ring-2 ring-destructive/60 bg-destructive/5 p-2" : ""}>
             <label className={labelCls} htmlFor="academicExperience">
-              Musical & academic experience
+              Musical & academic experience *
             </label>
             <textarea
               id="academicExperience"
               name="academicExperience"
+              required
               rows={3}
               maxLength={2000}
               className={inputCls}
@@ -452,13 +490,14 @@ export function EnrollmentForm() {
             </p>
           </div>
 
-          <div>
+          <div className={fieldErrors.musicalPreferences ? "rounded-lg ring-2 ring-destructive/60 bg-destructive/5 p-2" : ""}>
             <label className={labelCls} htmlFor="musicalPreferences">
-              Musical preferences — genres & styles you listen to often
+              Musical preferences — genres & styles you listen to often *
             </label>
             <textarea
               id="musicalPreferences"
               name="musicalPreferences"
+              required
               rows={3}
               maxLength={2000}
               className={inputCls}
@@ -469,13 +508,14 @@ export function EnrollmentForm() {
             </p>
           </div>
 
-          <div>
+          <div className={fieldErrors.motivation ? "rounded-lg ring-2 ring-destructive/60 bg-destructive/5 p-2" : ""}>
             <label className={labelCls} htmlFor="motivation">
-              What moves you to grow vocally?
+              What moves you to grow vocally? *
             </label>
             <textarea
               id="motivation"
               name="motivation"
+              required
               rows={4}
               maxLength={2000}
               className={inputCls}
@@ -494,13 +534,13 @@ export function EnrollmentForm() {
           )}
 
           <div className="flex flex-col items-center gap-3 pt-2">
-            <button
+            <Button
               type="submit"
               disabled={status === "submitting"}
               className="w-full sm:w-auto px-10 py-4 rounded-full bg-gradient-to-r from-primary to-[oklch(0.65_0.20_45)] text-primary-foreground font-semibold shadow-glow-gold hover:scale-[1.02] transition-transform disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              {status === "submitting" ? "Sending…" : "Submit"}
-            </button>
+              {status === "submitting" ? "Sending…" : embedded ? "Continue with these details" : "Submit"}
+            </Button>
             <p className="text-xs text-muted-foreground/80 text-center max-w-md">
               Your information is kept private and used only to welcome and prepare you for the
               course.

@@ -41,8 +41,11 @@ async function handle(request: Request): Promise<Response> {
 
   try {
     const { reconcileExpiredGracePeriods } = await import("@/lib/subscription-state.server");
+    const { reconcilePayPalRows } = await import("@/lib/paypal-state.server");
+    // PayPal first: its pure reconciler handles cancellation end + missed renewals too.
+    const paypal = await reconcilePayPalRows(env);
     const result = await reconcileExpiredGracePeriods(env);
-    return Response.json({ ok: true, environment: env, ...result });
+    return Response.json({ ok: true, environment: env, ...result, paypal });
   } catch (e) {
     console.error("[reconcile-access] failed:", e);
     return new Response("Reconciliation error", { status: 500 });

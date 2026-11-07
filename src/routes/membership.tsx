@@ -11,8 +11,9 @@ import { LEGAL } from "@/lib/legal";
 import { COURSE_MODEL, resolveEntitlements, type Tier } from "@/lib/entitlements";
 
 export const Route = createFileRoute("/membership")({
-  validateSearch: (search: Record<string, unknown>): { session_id?: string } => ({
+  validateSearch: (search: Record<string, unknown>): { session_id?: string; provider?: "paypal" } => ({
     session_id: typeof search.session_id === "string" ? search.session_id : undefined,
+    provider: search.provider === "paypal" ? "paypal" : undefined,
   }),
   head: () => ({
     meta: [
@@ -62,8 +63,8 @@ function buildSchedule(startIso: string | null, months: number | null) {
   return out;
 }
 
-// First class: Tuesday, September 1, 2026, 12:30 UTC (09:30 in São Paulo).
-const COURSE_START_UTC = new Date(Date.UTC(2026, 8, 1, 12, 30));
+// First class: Tuesday, October 20, 2026, 12:30 UTC (09:30 in São Paulo).
+const COURSE_START_UTC = new Date(Date.UTC(2026, 9, 20, 12, 30));
 
 function formatCourseStartUtc(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
@@ -133,7 +134,7 @@ function CourseStartCard() {
       )}
       <p className="mt-4 text-sm text-muted-foreground">
         <span className="text-primary">●</span> Add this to your calendar now. The day is
-        Tuesday, September 1, 2026. All sessions recur weekly from this starting point.
+        Tuesday, October 20, 2026. All sessions recur weekly from this starting point.
       </p>
     </div>
   );
@@ -349,8 +350,45 @@ function VipGatheringCard({
 }
 
 
+/**
+ * PayPal subscriptions are managed in PayPal, never through the Stripe portal
+ * or Stripe summary (those only accept Stripe Checkout session ids).
+ */
+function PayPalMembership() {
+  return (
+    <main className="min-h-screen bg-background px-6 py-16">
+      <div className="mx-auto max-w-xl space-y-5 rounded-2xl border border-border bg-card p-8">
+        <h1 className="font-display text-3xl text-foreground">Your PayPal subscription</h1>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Your plan renews automatically through PayPal for the same duration and price until you cancel.
+          To cancel or update your payment method, open PayPal → Settings → Payments → Automatic payments.
+          Cancelling stops the next charge; you keep access until the end of the period you already paid for.
+        </p>
+        <a
+          href="https://www.paypal.com/myaccount/autopay/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
+        >
+          Open PayPal automatic payments
+        </a>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Your access status and paid-through date are shown in your{" "}
+          <Link to="/members" className="text-primary hover:underline">member area</Link>. Plan or duration
+          changes are reviewed individually — write to {LEGAL.contactEmail}.
+        </p>
+      </div>
+    </main>
+  );
+}
+
 function MembershipPage() {
-  const { session_id } = Route.useSearch();
+  const { session_id, provider } = Route.useSearch();
+  if (provider === "paypal") return <PayPalMembership />;
+  return <StripeMembership session_id={session_id} />;
+}
+
+function StripeMembership({ session_id }: { session_id?: string }) {
   const fetchSummary = useServerFn(getSubscriptionAccessSummary);
   const openPortal = useServerFn(createPortalSession);
   const [state, setState] = useState<

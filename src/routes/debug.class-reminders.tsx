@@ -1,7 +1,7 @@
 import { createFileRoute, stripSearchParams, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { toast } from "sonner";
 import { getClassReminderLog, runClassReminderSweepNow } from "@/lib/class-reminders.functions";
@@ -41,7 +41,7 @@ const searchSchema = z.object({
 const defaults = { dateFrom: "", dateTo: "", status: "all" as const, leadId: "" };
 
 export const Route = createFileRoute("/debug/class-reminders")({
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: (search: Record<string, unknown>) => searchSchema.parse(search),
   search: { middlewares: [stripSearchParams(defaults)] },
   component: ClassRemindersAdmin,
   head: () => ({

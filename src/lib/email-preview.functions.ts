@@ -3,7 +3,7 @@ import { z } from "zod";
 
 /** Renders the exact recovery email for a lead WITHOUT sending anything. */
 export const previewRecoveryEmail = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         leadId: z.string().uuid().optional(),
@@ -54,7 +54,7 @@ export const previewRecoveryEmail = createServerFn({ method: "POST" })
 
 /** Sends the reviewed recovery email. Requires the exact subject seen in the preview. */
 export const approveAndSendRecoveryEmail = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         leadId: z.string().uuid(),

@@ -1,0 +1,2 @@
+ALTER TABLE public.lesson_items DROP CONSTRAINT lesson_items_kind_check;
+ALTER TABLE public.lesson_items ADD CONSTRAINT lesson_items_kind_check CHECK (kind IN ('video','pdf','slides_link','slide_deck','external_app','flashcards'));

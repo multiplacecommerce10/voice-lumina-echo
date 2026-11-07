@@ -1,7 +1,6 @@
 // Server-only helpers for abandoned-checkout recovery.
 
-import { buildRecoveryEmail, planLabel } from "@/lib/recovery-email";
-import { EMAIL_SENDERS, senderInstruction } from "@/lib/email-branding";
+import { buildRecoveryEmail } from "@/lib/recovery-email";
 
 
 
@@ -33,19 +32,15 @@ export type LeadRow = {
 
 
 /**
- * Sends the recovery email payload to the Taskade flow and stamps the lead.
- * Returns true when the webhook accepted the payload.
+ * Sends the recovery email directly via Hostinger Agentic Mail (confirm
+ * mailbox) and stamps the lead. Taskade was decommissioned. Returns true
+ * when Hostinger accepted the message.
  */
 export async function sendRecoveryEmail(lead: LeadRow, reason: string): Promise<boolean> {
   if (!lead.email) return false;
 
-  const { forwardToTaskade } = await import("@/lib/taskade.server");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const attempt = (lead.recovery_attempts ?? 0) + 1;
-  const answers =
-    lead.answers && typeof lead.answers === "object" && !Array.isArray(lead.answers)
-      ? (lead.answers as Record<string, unknown>)
-      : {};
 
   // Make sure the lead owns a resume code before the email goes out.
   let resumeCode = lead.resume_code ?? null;
@@ -74,101 +69,33 @@ export async function sendRecoveryEmail(lead: LeadRow, reason: string): Promise<
   }
 
   const {
-    resumeUrl,
-    fullName,
-    firstName,
-    greetingName,
-    courseName,
     subject: emailSubject,
     bodyText: emailBodyText,
     bodyHtml: emailBodyHtml,
   } = draft;
 
-
-  const payload = {
-    event: "checkout.abandoned" as const,
-    // Top-level status fields the Taskade flow branches on:
-    // payment_status = "unpaid" → send payment guidance.
-    payment_status: "unpaid" as const,
-    enrollment_status: "incomplete" as const,
-    // Which Taskade automation owns this payload, plus a stable idempotency
-    // key so a replay of the same recovery attempt is ignored downstream.
-    flow_key: "cart_recovery" as const,
-    dedupe_key: `recovery:${lead.id}:${attempt}`,
-    course_name: courseName,
-    email_subject: emailSubject,
-    email_body_text: emailBodyText,
-    email_body_html: emailBodyHtml,
-    sender_email: EMAIL_SENDERS.cart_recovery,
-    sender_name: EMAIL_SENDERS.name,
-    sender_instruction: senderInstruction("cart_recovery"),
-    full_name: fullName,
-    first_name: firstName,
-    greeting_name: greetingName,
-    email: lead.email,
-    lead_id: lead.id,
-    resume_code: resumeCode,
-    phone: lead.phone ?? "",
-    plan: lead.plan_intended ?? null,
-
-    attribution_summary: null,
-    utm_source: lead.utm_source,
-    utm_medium: lead.utm_medium,
-    utm_campaign: lead.utm_campaign,
-    utm_term: lead.utm_term,
-    utm_content: lead.utm_content,
-    gclid: lead.gclid,
-    fbclid: lead.fbclid,
-    landing_url: lead.landing_url,
-    referrer: lead.referrer,
-    extra: {
-      flow_key: "cart_recovery",
-      dedupe_key: `recovery:${lead.id}:${attempt}`,
-      payment_status: "unpaid",
-      enrollment_status: "incomplete",
-      email: lead.email,
-      full_name: fullName,
-      lead_id: lead.id,
-      plan_label: planLabel(lead.plan_intended),
-      abandon_reason: reason,
-      recovery_attempt: attempt,
-      resume_code: resumeCode,
-      resume_url: resumeUrl,
-      cta_label: "Complete my enrollment",
-      email_kind: "abandoned_checkout_recovery",
-      first_name: firstName,
-      greeting_name: greetingName,
-      greeting_line: `Hello ${greetingName},`,
-      course_name: courseName,
-      email_subject: emailSubject,
-      email_body_text: emailBodyText,
-      email_body_html: emailBodyHtml,
-      sender_email: EMAIL_SENDERS.cart_recovery,
-      sender_name: EMAIL_SENDERS.name,
-      sender_instruction: senderInstruction("cart_recovery"),
-      email_greeting_instruction:
-        "Send the email using the HTML version in email_body_html. If the email provider cannot send HTML, fall back to the plain text in email_body_text. Use the subject exactly as email_subject. Do not rewrite, do not invent a course name, and never wrap the first name in parentheses, brackets or placeholder markers. The course is always called 'The Power of Conscious Voice — Tecendo Som'.",
-      // All student-facing communication must be written in English.
-      language: "en",
-      language_name: "English",
-      locale: "en-US",
-      email_language_instruction:
-        "Write this email entirely in English (US). Do not use Portuguese.",
-      source: lead.source ?? null,
-      // Full enrollment-form answers (goal, voice_type, experience_level, city, country, etc.)
-      ...(answers as Record<string, unknown>),
-      answers,
-    },
-  };
-
-
-  const { isFictitiousLead, markFictitious } = await import("@/lib/fictitious");
-  const finalPayload = isFictitiousLead(lead) ? markFictitious(payload) : payload;
-  const result = await forwardToTaskade(finalPayload, { flow: "recovery" });
-  const ok = result.ok === true;
+  // Send directly from the Hostinger confirm@ mailbox. Fictitious test leads
+  // are skipped entirely — they must never receive real email.
+  const { isFictitiousLead } = await import("@/lib/fictitious");
+  let ok = false;
+  if (isFictitiousLead(lead)) {
+    console.log("[lead-recovery] fictitious lead — email skipped", lead.id);
+  } else {
+    const { sendHostingerMail } = await import("@/lib/hostinger-mail.server");
+    const sent = await sendHostingerMail("confirm", {
+      to: lead.email,
+      subject: emailSubject,
+      html: emailBodyHtml,
+      text: emailBodyText,
+    });
+    ok = sent.ok;
+    if (!sent.ok) {
+      console.error("[lead-recovery] hostinger send failed:", sent.status, sent.message);
+    }
+  }
   console.log(
-    "[lead-recovery] webhook result",
-    JSON.stringify({ lead_id: lead.id, attempt, ok, result }),
+    "[lead-recovery] send result",
+    JSON.stringify({ lead_id: lead.id, attempt, ok, reason }),
   );
 
   try {

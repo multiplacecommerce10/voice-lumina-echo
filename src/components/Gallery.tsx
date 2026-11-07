@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import luxSonoraEscadariaAsset from "../../public/gallery/lux-sonora-escadaria.jpg.asset.json";
-import luxSonoraFormalAsset from "../../public/gallery/orquestra-lux-sonora.webp.asset.json";
-import rehearsalOrchestraAsset from "../../public/gallery/rehearsal-orchestra.jpg.asset.json";
-import studentsPerformanceAsset from "../../public/gallery/students-performance.jpg.asset.json";
-import cucaRockerAsset from "../../public/gallery/cuca-rocker.png.asset.json";
-import prizedConcertAsset from "../../public/gallery/prized-concert.jpg.asset.json";
+
+const luxSonoraEscadariaUrl = "/__l5e/assets-v1/3914222f-4244-4ab1-95e3-33f614015604/lux-sonora-escadaria.jpg";
+const luxSonoraFormalUrl = "/__l5e/assets-v1/0e6c97f1-487f-4a46-8ab7-9a4152cfd1c1/orquestra-lux-sonora.webp";
+const rehearsalOrchestraUrl = "/__l5e/assets-v1/aaa6547f-bfab-4602-a4eb-db083ebdbf63/rehearsal-orchestra.jpg";
+const studentsPerformanceUrl = "/__l5e/assets-v1/fb8bf3b7-e46f-441f-b083-d01ebe9ec38a/students-performance.jpg";
+const cucaRockerUrl = "/__l5e/assets-v1/70c8bdaa-a1b7-40bc-bfc4-851cf0fa6eef/cuca-rocker.png";
+const prizedConcertUrl = "/__l5e/assets-v1/d648694f-790d-4331-9497-72b45e18219a/prized-concert.jpg";
 
 
 type MediaItem =
@@ -13,15 +14,15 @@ type MediaItem =
 
 const items: MediaItem[] = [
   { type: "photo", src: "/gallery/photo-3.jpg", alt: "Choir conducted by Cuca Medina", caption: "Choral conducting · live performance" },
-  { type: "photo", src: rehearsalOrchestraAsset.url, alt: "Cuca rehearsing with Orquestra Lux Sonora", caption: "Rehearsal with orchestra" },
+  { type: "photo", src: rehearsalOrchestraUrl, alt: "Cuca rehearsing with Orquestra Lux Sonora", caption: "Rehearsal with orchestra" },
   { type: "photo", src: "/gallery/photo-4.jpg", alt: "Soloist student", caption: "Soloist student" },
-  { type: "photo", src: studentsPerformanceAsset.url, alt: "Students performance", caption: "Students · performance" },
-  { type: "photo", src: cucaRockerAsset.url, alt: "Cuca Medina — rocker vocal study", caption: "Studio · vocal study" },
+  { type: "photo", src: studentsPerformanceUrl, alt: "Students performance", caption: "Students · performance" },
+  { type: "photo", src: cucaRockerUrl, alt: "Cuca Medina — rocker vocal study", caption: "Studio · vocal study" },
   { type: "photo", src: "/gallery/photo-1.jpg", alt: "Crianças Cantoras do IPDAE", caption: "Crianças Cantoras do IPDAE" },
   { type: "photo", src: "/gallery/photo-2.jpg", alt: "Coro jovem Vox Habilis", caption: "Vox Habilis" },
-  { type: "photo", src: prizedConcertAsset.url, alt: "Cuca Medina on stage — prized concert", caption: "Prized concert" },
-  { type: "photo", src: luxSonoraEscadariaAsset.url, alt: "Orquestra Lux Sonora", caption: "Orquestra Lux Sonora" },
-  { type: "photo", src: luxSonoraFormalAsset.url, alt: "Orquestra Lux Sonora", caption: "Orquestra Lux Sonora" },
+  { type: "photo", src: prizedConcertUrl, alt: "Cuca Medina on stage — prized concert", caption: "Prized concert" },
+  { type: "photo", src: luxSonoraEscadariaUrl, alt: "Orquestra Lux Sonora", caption: "Orquestra Lux Sonora" },
+  { type: "photo", src: luxSonoraFormalUrl, alt: "Orquestra Lux Sonora", caption: "Orquestra Lux Sonora" },
 ];
 
 

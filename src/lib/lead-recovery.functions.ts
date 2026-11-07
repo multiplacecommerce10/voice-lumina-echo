@@ -8,7 +8,7 @@ const idSchema = z.object({
 
 /** Marks that the person reached the payment step. */
 export const markCheckoutStarted = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ leadId: z.string().uuid() }).parse(input))
+  .validator((input: unknown) => z.object({ leadId: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -28,7 +28,7 @@ export const markCheckoutStarted = createServerFn({ method: "POST" })
  * Keeps the lead, flags it as abandoned and triggers the recovery email.
  */
 export const markCheckoutAbandoned = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => idSchema.parse(input))
+  .validator((input: unknown) => idSchema.parse(input))
   .handler(async ({ data }) => {
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

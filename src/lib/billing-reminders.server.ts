@@ -1,5 +1,6 @@
-// Persists subscription billing state and sends "next charge" reminders to
-// Taskade a few days before each monthly debit.
+// Persists subscription billing state and sends "next charge" reminders a few
+// days before each monthly debit, directly via Hostinger Agentic Mail
+// (subscription mailbox) — Taskade was decommissioned.
 import type { BillingSummary } from "@/lib/billing-summary.server";
 
 // Days before the next charge when a reminder should go out.
@@ -228,7 +229,8 @@ export async function runBillingReminderSweep(options?: {
     return result;
   }
 
-  const { forwardToTaskade } = await import("@/lib/taskade.server");
+  const { sendHostingerMail } = await import("@/lib/hostinger-mail.server");
+  const { buildReminderEmail } = await import("@/lib/email-branding");
 
   for (const row of rows ?? []) {
     result.scanned++;
@@ -257,20 +259,40 @@ export async function runBillingReminderSweep(options?: {
     }
 
     const built = buildReminderPayload(row, offset, remaining);
-    const forward = await forwardToTaskade({
-      ...built.payload,
-      extra: { ...built.payload.extra, ...(options?.dryRun ? { dry_run: true } : {}) },
-    });
-
-
+    const to = (row.email as string | null)?.toLowerCase();
+    let ok = false;
+    if (!to) {
+      console.warn("[billing-reminders] row without email:", row.stripe_subscription_id);
+    } else if (options?.dryRun) {
+      console.log(`[billing-reminders] DRY-RUN would email ${to}: ${built.preview.subject}`);
+      ok = true;
+    } else {
+      const mail = buildReminderEmail({
+        previewText: built.preview.preheader,
+        headline: built.preview.subject,
+        paragraphs: built.preview.paragraphs,
+        ctaLabel: built.preview.ctaLabel,
+        ctaUrl: built.preview.ctaUrl,
+      });
+      const sent = await sendHostingerMail("subscription", {
+        to,
+        subject: built.preview.subject,
+        html: mail.html,
+        text: mail.text,
+      });
+      ok = sent.ok;
+      if (!sent.ok) {
+        console.error("[billing-reminders] hostinger send failed:", sent.status, sent.message);
+      }
+    }
 
     result.details.push({
       subscription: row.stripe_subscription_id as string,
       days: offset,
-      ok: forward.ok,
+      ok,
     });
 
-    if (forward.ok) {
+    if (ok) {
       result.sent++;
       if (!options?.dryRun) {
         await supabaseAdmin

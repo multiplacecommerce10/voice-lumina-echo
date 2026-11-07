@@ -1,14 +1,13 @@
 // Builder for the SECOND enrollment email: member-area access credentials.
 //
-// Flow: the enrollment webhook (flow_key = "payment_confirmed") triggers the
-// Taskade automation, which sends two emails from
-// subscription@consciousvoice.tecendosom.com:
+// Flow: the payment webhook (fulfillment_ready) sends two emails from
+// subscription@consciousvoice.tecendosom.com via Hostinger Agentic Mail:
 //   1. Welcome / enrollment confirmation  -> src/lib/confirmation-email.ts
 //   2. Member-area access credentials     -> this file
 //
-// The credentials themselves are created by Taskade (member area), so this
-// email intentionally keeps two merge tokens that Taskade must replace before
-// sending: {{member_username}} and {{member_password}}.
+// The member account lives on this site (Supabase Auth). The webhook creates
+// the login and passes the REAL username/password into this builder — no
+// merge tokens, nothing is replaced downstream.
 
 import {
   buildChecklistHtml,
@@ -19,12 +18,14 @@ import {
   escapeHtml,
 } from "@/lib/email-branding";
 
-export const CREDENTIALS_TOKENS = ["{{member_username}}", "{{member_password}}"] as const;
-
 export type AccessCredentialsEmailInput = {
   fullName: string | null;
   membershipUrl: string | null;
   tier: "live" | "complete" | null;
+  /** The student's login e-mail (shown as the username). */
+  username: string;
+  /** The generated first sign-in password. */
+  password: string;
 };
 
 export type AccessCredentialsEmailDraft = {
@@ -33,7 +34,6 @@ export type AccessCredentialsEmailDraft = {
   bodyText: string;
   bodyHtml: string;
   steps: string[];
-  requiredTokens: string[];
 };
 
 export function buildAccessCredentialsEmail(
@@ -42,6 +42,8 @@ export function buildAccessCredentialsEmail(
   const fullName = (input.fullName ?? "").trim();
   const greetingName = fullName.split(/\s+/)[0] || "there";
   const membershipUrl = input.membershipUrl || EMAIL_BRAND.membershipUrl;
+  const username = input.username;
+  const password = input.password;
 
   const steps = [
     "Open the member area using the button below.",
@@ -69,8 +71,8 @@ export function buildAccessCredentialsEmail(
     intro,
     "",
     "Your access credentials:",
-    "Username: {{member_username}}",
-    "Password: {{member_password}}",
+    `Username: ${username}`,
+    `Password: ${password}`,
     "",
     `Member area: ${membershipUrl}`,
     "",
@@ -80,22 +82,24 @@ export function buildAccessCredentialsEmail(
     closing,
     "",
     "With warmth,",
-    "Cuca Medina — Tecendo Som",
+    "Cuca Medina",
+    "— Tecendo Som Team",
     "",
     "Priscila Medina Gubert — ME (Tecendo Som) | CNPJ 07.331.609/0001-92 | Avenida Orleães, 104, Porto Alegre, RS, Brazil",
     "Questions? Write to contact@tecendosom.com — we read every message.",
   ].join("\n");
 
   const bodyInner = `
+<p style="font-family:${EMAIL_BRAND.fontSans};font-size:16px;line-height:1.6;color:${EMAIL_BRAND.ink};margin:0 0 18px;">Dear ${escapeHtml(greetingName)},</p>
 <p style="font-family:${EMAIL_BRAND.fontSans};font-size:16px;line-height:1.6;color:${EMAIL_BRAND.ink};margin:0 0 18px;">${escapeHtml(intro)}</p>
 
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${EMAIL_BRAND.cream};border-radius:12px;margin:20px 0;border:1px solid ${EMAIL_BRAND.border};">
   <tr>
     <td style="padding:20px 24px;">
       <p style="font-family:${EMAIL_BRAND.fontSans};font-size:13px;text-transform:uppercase;letter-spacing:0.08em;color:${EMAIL_BRAND.muted};margin:0 0 8px;">Username</p>
-      <p style="font-family:${EMAIL_BRAND.fontSans};font-size:18px;color:${EMAIL_BRAND.ink};margin:0 0 16px;font-weight:600;">{{member_username}}</p>
+      <p style="font-family:${EMAIL_BRAND.fontSans};font-size:18px;color:${EMAIL_BRAND.ink};margin:0 0 16px;font-weight:600;">${escapeHtml(username)}</p>
       <p style="font-family:${EMAIL_BRAND.fontSans};font-size:13px;text-transform:uppercase;letter-spacing:0.08em;color:${EMAIL_BRAND.muted};margin:0 0 8px;">Password</p>
-      <p style="font-family:${EMAIL_BRAND.fontSans};font-size:18px;color:${EMAIL_BRAND.gold};margin:0;font-weight:600;">{{member_password}}</p>
+      <p style="font-family:${EMAIL_BRAND.fontSans};font-size:18px;color:${EMAIL_BRAND.gold};margin:0;font-weight:600;">${escapeHtml(password)}</p>
     </td>
   </tr>
 </table>
@@ -107,16 +111,12 @@ ${buildEmailButton("Enter the member area", membershipUrl)}
 
 <p style="font-family:${EMAIL_BRAND.fontSans};font-size:15px;line-height:1.6;color:${EMAIL_BRAND.inkLight};margin:24px 0 0;">${escapeHtml(closing)}</p>
 
-<p style="font-family:${EMAIL_BRAND.fontSans};font-size:15px;line-height:1.6;color:${EMAIL_BRAND.inkLight};margin:18px 0 0;">With warmth,<br />Cuca Medina — Tecendo Som</p>
+<p style="font-family:${EMAIL_BRAND.fontSans};font-size:15px;line-height:1.6;color:${EMAIL_BRAND.inkLight};margin:18px 0 0;">With warmth,<br />Cuca Medina<br />— Tecendo Som Team</p>
 `.trim();
 
   const bodyHtml = buildEmailDocument({
     previewText: "Your member area access",
-    hero: buildEmailHero({
-      headline: "Your Member Access",
-      subheadline: "Username and password for The Power of Conscious Voice",
-      greetingName,
-    }),
+    hero: buildEmailHero({ headline: "Welcome to the course" }),
     bodyHtml: bodyInner,
   });
 
@@ -126,6 +126,5 @@ ${buildEmailButton("Enter the member area", membershipUrl)}
     bodyText,
     bodyHtml,
     steps,
-    requiredTokens: [...CREDENTIALS_TOKENS],
   };
 }

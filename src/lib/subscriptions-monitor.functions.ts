@@ -9,7 +9,7 @@ const listSchema = z.object({
 
 /** Subscriptions with next charge, schedule and reminder state for the admin panel. */
 export const getSubscriptionsSnapshot = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => listSchema.parse(input ?? {}))
+  .validator((input: unknown) => listSchema.parse(input ?? {}))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -56,7 +56,7 @@ export const getSubscriptionsSnapshot = createServerFn({ method: "POST" })
 
 /** Reminder webhook attempts sent to Taskade. */
 export const getReminderLog = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({ limit: z.number().int().min(1).max(100).optional().default(30) }).parse(input ?? {}),
   )
   .handler(async ({ data }) => {
@@ -74,7 +74,7 @@ export const getReminderLog = createServerFn({ method: "POST" })
 
 /** Runs the reminder sweep on demand (dry-run by default). */
 export const runReminderSweepNow = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({ dryRun: z.boolean().optional().default(true) }).parse(input ?? {}),
   )
   .handler(async ({ data }) => {
@@ -85,7 +85,7 @@ export const runReminderSweepNow = createServerFn({ method: "POST" })
 
 /** Renders the personalized renewal reminder email for one subscription (no send). */
 export const previewReminderEmail = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         subscriptionId: z.string().trim().min(3).max(120),
@@ -119,7 +119,7 @@ export const previewReminderEmail = createServerFn({ method: "POST" })
 
 /** Full reminder send history for one subscription (timing, payload, Taskade response). */
 export const getSubscriptionReminderHistory = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         subscriptionId: z.string().trim().min(3).max(120),
@@ -171,7 +171,7 @@ export const getSubscriptionReminderHistory = createServerFn({ method: "POST" })
 
 /** Sends a real test reminder to Taskade for one subscription (flagged as a test). */
 export const sendTestReminder = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         subscriptionId: z.string().trim().min(3).max(120),
@@ -183,7 +183,8 @@ export const sendTestReminder = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { buildReminderPayload, pickReminderOffset } = await import("@/lib/billing-reminders.server");
-    const { forwardToTaskade } = await import("@/lib/taskade.server");
+    const { sendHostingerMail } = await import("@/lib/hostinger-mail.server");
+    const { buildReminderEmail } = await import("@/lib/email-branding");
 
     const { data: row, error } = await supabaseAdmin
       .from("subscription_billing")
@@ -202,33 +203,35 @@ export const sendTestReminder = createServerFn({ method: "POST" })
     const target = data.testEmail ?? (row.email as string | null) ?? null;
     const built = buildReminderPayload({ ...row, email: target }, offset, data.offsetDays ?? remaining);
 
-    const forward = await forwardToTaskade({
-      ...built.payload,
-      environment: "sandbox",
-      email: target,
-      extra: {
-        ...built.payload.extra,
-        test_send: true,
-        test_mode: "sandbox",
-        student_email: target,
-        sent_from: "admin_panel",
-      },
+    if (!target) return { ok: false as const, error: "no_email", sentTo: null, offsetDays: offset, status: null, attempts: 0, preview: built.preview };
+    const mail = buildReminderEmail({
+      previewText: built.preview.preheader,
+      headline: built.preview.subject,
+      paragraphs: built.preview.paragraphs,
+      ctaLabel: built.preview.ctaLabel,
+      ctaUrl: built.preview.ctaUrl,
+    });
+    const sent = await sendHostingerMail("subscription", {
+      to: target,
+      subject: `[TEST] ${built.preview.subject}`,
+      html: mail.html,
+      text: mail.text,
     });
 
     return {
-      ok: forward.ok,
-      error: forward.ok ? null : forward.message ?? forward.reason,
+      ok: sent.ok,
+      error: sent.ok ? null : sent.message ?? `HTTP ${sent.status}`,
       sentTo: target,
       offsetDays: offset,
-      status: forward.status ?? null,
-      attempts: forward.attempts,
+      status: sent.status,
+      attempts: 1,
       preview: built.preview,
     };
   });
 
 /** Re-sends the renewal reminder for one subscription (dry-run or real). */
 export const resendReminder = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         subscriptionId: z.string().trim().min(3).max(120),
@@ -240,7 +243,8 @@ export const resendReminder = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { buildReminderPayload, pickReminderOffset } = await import("@/lib/billing-reminders.server");
-    const { forwardToTaskade } = await import("@/lib/taskade.server");
+    const { sendHostingerMail } = await import("@/lib/hostinger-mail.server");
+    const { buildReminderEmail } = await import("@/lib/email-branding");
 
     const { data: row, error } = await supabaseAdmin
       .from("subscription_billing")
@@ -258,17 +262,35 @@ export const resendReminder = createServerFn({ method: "POST" })
     const offset = data.offsetDays ?? pickReminderOffset(remaining);
     const built = buildReminderPayload(row, offset, data.offsetDays ?? remaining);
 
-    const forward = await forwardToTaskade({
-      ...built.payload,
-      extra: {
-        ...built.payload.extra,
-        resend: true,
-        sent_from: "admin_panel_resend",
-        ...(data.dryRun ? { dry_run: true } : {}),
-      },
-    });
+    const to = (row.email as string | null)?.toLowerCase() ?? null;
+    let ok = false;
+    let sendError: string | null = null;
+    let sendStatus: number | null = null;
+    if (data.dryRun) {
+      console.log(`[resendReminder] DRY-RUN would email ${to}: ${built.preview.subject}`);
+      ok = true;
+    } else if (!to) {
+      sendError = "no_email";
+    } else {
+      const mail = buildReminderEmail({
+        previewText: built.preview.preheader,
+        headline: built.preview.subject,
+        paragraphs: built.preview.paragraphs,
+        ctaLabel: built.preview.ctaLabel,
+        ctaUrl: built.preview.ctaUrl,
+      });
+      const sent = await sendHostingerMail("subscription", {
+        to,
+        subject: built.preview.subject,
+        html: mail.html,
+        text: mail.text,
+      });
+      ok = sent.ok;
+      sendStatus = sent.status;
+      sendError = sent.ok ? null : sent.message ?? `HTTP ${sent.status}`;
+    }
 
-    if (forward.ok && !data.dryRun) {
+    if (ok && !data.dryRun) {
       await supabaseAdmin
         .from("subscription_billing")
         .update({
@@ -280,12 +302,12 @@ export const resendReminder = createServerFn({ method: "POST" })
     }
 
     return {
-      ok: forward.ok,
-      error: forward.ok ? null : forward.message ?? forward.reason,
+      ok,
+      error: sendError,
       dryRun: data.dryRun,
       offsetDays: offset,
-      status: forward.status ?? null,
-      attempts: forward.attempts,
+      status: sendStatus,
+      attempts: 1,
       sentTo: (row.email as string | null) ?? null,
     };
   });

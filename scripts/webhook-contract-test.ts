@@ -553,6 +553,7 @@ const baseRow = {
   email: null,
   full_name: null,
   environment: "sandbox",
+  courtesy_access: true,
   stripe_customer_id: "cus_1",
   stripe_subscription_id: "sub_1",
   stripe_price_id: "price_1",
@@ -561,7 +562,7 @@ const baseRow = {
   duration_months: 3,
   status: "past_due",
   current_period_start: null,
-  current_period_end: null,
+  current_period_end: new Date(nowMs + 86400000).toISOString(),
   cancel_at_period_end: false,
   canceled_at: null,
   first_payment_failed_at: new Date(nowMs - 8 * 86400000).toISOString(),
@@ -698,6 +699,7 @@ check(
   evaluateAccess(
     {
       access_status: "past_due_grace",
+      environment: "live",
       grace_expires_at: new Date(1_700_000_000_000).toISOString(),
       student_enrolled_at: "2026-09-01T00:00:00.000Z",
     } as never,
@@ -709,6 +711,7 @@ check(
   evaluateAccess(
     {
       access_status: "past_due_grace",
+      environment: "live",
       grace_expires_at: new Date(1_700_000_000_000).toISOString(),
       student_enrolled_at: "2026-09-01T00:00:00.000Z",
     } as never,
@@ -770,9 +773,9 @@ for (const [label, src] of [
     ),
   );
   check(
-    `${label} still forwards to Taskade unconditionally`,
-    src.includes('const { forwardToTaskade } = await import("@/lib/taskade.server");') &&
-      src.includes("jobs: Promise<unknown>[] = [forwardToTaskade(forwardPayload)]"),
+    `${label} does not call the decommissioned Taskade delivery`,
+    !src.includes('await import("@/lib/taskade.server")') &&
+      !src.includes("forwardToTaskade(forwardPayload)"),
   );
   check(
     `${label} logs MAKE_DISABLED_RESULT when the flag is off`,

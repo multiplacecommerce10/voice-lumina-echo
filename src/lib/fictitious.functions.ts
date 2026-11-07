@@ -48,7 +48,7 @@ export const listFictitiousLeads = createServerFn({ method: "POST" }).handler(as
 
 /** Applies the fictitious chancela to an existing lead (no deletion). */
 export const markLeadFictitious = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({ leadId: z.string().uuid(), marked: z.boolean().optional().default(true) }).parse(input),
   )
   .handler(async ({ data }) => {
@@ -96,7 +96,7 @@ export const markLeadFictitious = createServerFn({ method: "POST" })
  * and only deletes rows that are flagged/detected as fictitious.
  */
 export const purgeFictitiousLeads = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({ confirmation: z.string().max(80), dryRun: z.boolean().optional().default(true) }).parse(input),
   )
   .handler(async ({ data }) => {

@@ -9,7 +9,7 @@ export function classifyDiagnosticEvent(event: { livemode?: boolean; type?: stri
   if (obj.metadata?.payment_diagnostic !== PAYMENT_DIAGNOSTIC) return null;
   const amount = obj.amount_total ?? obj.amount;
   const valid = env === "live" && event.livemode === true &&
-    /^(checkout\.session\.|payment_intent\.|charge\.)/.test(event.type ?? "") &&
+    /^(checkout\.session\.|payment_intent\.e|charge\.)/.test(event.type ?? "") &&
     obj.currency === "usd" && amount === 100 &&
     (obj.mode === undefined || obj.mode === "payment") && !obj.subscription &&
     !obj.metadata.lead_id && !obj.metadata.tier && !obj.metadata.package;

@@ -1,6 +1,6 @@
 /** Server-created marker; never an alternative course checkout permission. */
 export const PAYMENT_DIAGNOSTIC = "conscious_voice_usd1_v1";
-export const DIAGNOSTIC_LABEL = "The Power of Conscious Voice — diagnostic payment USD 1";
+export const DIAGNOSTIC_LABEL = "Convidado especial — US$ 1";
 
 export function classifyDiagnosticEvent(event: { livemode?: boolean; type?: string; data?: { object?: any } }, env: string) {
   const obj = event.data?.object;

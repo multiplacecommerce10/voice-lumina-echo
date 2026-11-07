@@ -1,6 +1,6 @@
 # Private post-form USD 1 payer diagnostic
 
-The mother is the payer; Tecendo Som is the merchant. This is not course admission. No pedagogical approval, account creation, membership, course emails, marketing or abandoned-cart recovery runs in this path. No new provider objects or captures were created during implementation.
+The mother is the payer; Tecendo Som is the merchant. This is not course admission. No pedagogical approval, account creation, membership, course emails, marketing or abandoned-cart recovery runs in this path. The private diagnostic product/one-time price was registered in the managed test catalog for publication sync; no checkout sessions, PayPal orders or captures were created during implementation of this update.
 
 ## Private access and data
 - `/private-payment` requires a 256-bit invitation supplied in the URL fragment, removed from the address after loading and held in same-origin session storage for PayPal return. Tokens never appear in this report, source or GitHub.
@@ -15,10 +15,14 @@ The mother is the payer; Tecendo Som is the merchant. This is not course admissi
 - Before and after capture, GET verifies intent, one purchase unit, exact USD amount, bound reference/custom marker and the merchant verified from the existing live account. A pending capture is never paid; only COMPLETED order + COMPLETED exact capture is paid. Cancelled attempts cannot capture.
 - Current subscription webhook remains unchanged. PAYMENT.CAPTURE events do not enter subscription state, emails or membership. Diagnostic receipt is verified directly through the PayPal API.
 
-## Stripe tax: concrete blocker
+## Stripe tax: owner-authorized diagnostic update at 05:14 UTC
 At implementation time the connected live account returned country **BR**, charges_enabled true, and HTTP **400** for both `/v1/tax/settings` and `/v1/tax/registrations`: “Stripe Tax isn't yet supported for your country.”
 
-No automatic_tax, registrations, tax code/exemption decision or fee above USD 1 was configured. Requested tax collection is unresolved, so the private Stripe button and server creation action are blocked before reserving/creating a session. Existing embedded checkout remains intact; implementing an active private Stripe session requires the owner's resolved tax treatment. No dormant bypass/session-creation switch exists.
+The owner explicitly authorized this private USD 1 test **without automatic tax calculation**. No automatic_tax, registrations, tax code/exemption decision or fee above USD 1 was configured. This authorization resolves the diagnostic creation blocker only, not legal tax obligations or normal course tax handling.
+
+The exact private offer name is **Convidado especial — US$ 1**, independent of `payment_diagnostic=conscious_voice_usd1_v1`. It is used in the private screen, Stripe product and PaymentIntent description and PayPal purchase-unit description. Product sync key `conscious_voice_private_guest` and one-time price lookup key `conscious_voice_private_guest_usd1` are separate from all course keys. Quantity is fixed at one. No recurring plan or publicly linked checkout was added.
+
+After shared form validation, explicit consent and Stripe choice, the server validates the separate product/one-time USD 100 catalog facts, then creates one embedded live payment session with inclusive tax behavior, no automatic tax, no customer creation, no subscription or course lead/tier/package metadata. Session and PaymentIntent carry the marker plus diagnostic attempt id. Expiration is fixed to the reservation's one-hour window, provider idempotency key is stable, and retries reuse the same session. The raw client secret is returned only to the valid invited browser, never in logs, docs or GitHub. After payment, a token-bound read verifies Stripe facts before showing paid. No payment is performed by tooling.
 
 Signed Stripe diagnostic events still audit before course lifecycle. Linked diagnostic events additionally verify their stored session/PaymentIntent relation through Stripe, exact USD 100 minor units and payment mode before atomically updating diagnostic status/event deduplication. Unmarked events retain the normal course flow. Legacy unlinked diagnostics remain audit-only.
 
@@ -35,3 +39,7 @@ Signed Stripe diagnostic events still audit before course lifecycle. Linked diag
 - One 24-hour private invitation generated; no financial objects associated with it. A separate revoked synthetic invitation verified database concurrency only.
 - Publication requested once. Subsequent live check: homepage 200, unsigned PayPal live 401, unsigned Stripe live 400, but `/private-payment` still 404 and the invited form did not render. Therefore the corrected deployment is **not confirmed**, and the invitation must not yet be represented as a working published payment link. No retry publication was issued.
 - Database SELECT 1 succeeded; all three diagnostic tables have RLS enabled. No existing course records modified.
+
+### Update checks
+- Owner-authorized no-automatic-tax implementation: 14 focused mocks passed, 102 assertions, including exact USD 100 amount/quantity, payment mode, no tax automation/customer/subscription, duplicate/concurrent session protection and independent diagnostic metadata. Browser check covers fictitious form and consent only; no provider choice is clicked by tools.
+- Historical blocked/publication evidence above remains historical, not proof of this newer version. Publication and live version checks are recorded separately after the authorized update.

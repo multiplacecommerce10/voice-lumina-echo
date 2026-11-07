@@ -2,7 +2,7 @@ import { z } from "zod";
 import { profileSchema } from "./enrollment-profile";
 import { PAYMENT_DIAGNOSTIC } from "./payment-diagnostic";
 
-export const PRIVATE_DIAGNOSTIC_VERSION = "private-payer-v2-no-auto-tax-20261107";
+export const PRIVATE_DIAGNOSTIC_VERSION = "private-guest-complete7d-consent-retry-v3-20261107";
 export const DIAGNOSTIC_ORIGIN = "https://consciousvoice.tecendosom.com";
 export const PAYPAL_DIAGNOSTIC_PAYEE = "HNX3W9XUAPL7Y";
 export const DIAGNOSTIC_TAX_NOTICE = "One real US$1 payment. Automatic tax calculation is off for this private test, as authorized by the owner. This does not establish a tax exemption.";

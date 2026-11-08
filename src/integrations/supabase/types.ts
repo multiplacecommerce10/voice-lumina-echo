@@ -645,12 +645,14 @@ export type Database = {
       }
       payment_diagnostic_attempts: {
         Row: {
+          amount_minor: number
           approval_url: string | null
           capture_id: string | null
           capture_lock_until: string | null
           consent_at: string
           consent_version: string
           created_at: string
+          currency: string
           id: string
           invite_id: string
           paid_at: string | null
@@ -663,12 +665,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          amount_minor?: number
           approval_url?: string | null
           capture_id?: string | null
           capture_lock_until?: string | null
           consent_at?: string
           consent_version?: string
           created_at?: string
+          currency?: string
           id?: string
           invite_id: string
           paid_at?: string | null
@@ -681,12 +685,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          amount_minor?: number
           approval_url?: string | null
           capture_id?: string | null
           capture_lock_until?: string | null
           consent_at?: string
           consent_version?: string
           created_at?: string
+          currency?: string
           id?: string
           invite_id?: string
           paid_at?: string | null
@@ -792,24 +798,33 @@ export type Database = {
       }
       payment_diagnostic_invites: {
         Row: {
+          amount_minor: number
           created_at: string
+          currency: string
           expires_at: string
           id: string
           revoked_at: string | null
+          stripe_only: boolean
           token_hash: string
         }
         Insert: {
+          amount_minor?: number
           created_at?: string
+          currency?: string
           expires_at: string
           id?: string
           revoked_at?: string | null
+          stripe_only?: boolean
           token_hash: string
         }
         Update: {
+          amount_minor?: number
           created_at?: string
+          currency?: string
           expires_at?: string
           id?: string
           revoked_at?: string | null
+          stripe_only?: boolean
           token_hash?: string
         }
         Relationships: []
@@ -1303,12 +1318,14 @@ export type Database = {
       claim_diagnostic_capture: {
         Args: { p_id: string; p_invite: string }
         Returns: {
+          amount_minor: number
           approval_url: string | null
           capture_id: string | null
           capture_lock_until: string | null
           consent_at: string
           consent_version: string
           created_at: string
+          currency: string
           id: string
           invite_id: string
           paid_at: string | null
@@ -1330,12 +1347,14 @@ export type Database = {
       claim_diagnostic_creation: {
         Args: { p_id: string; p_invite: string }
         Returns: {
+          amount_minor: number
           approval_url: string | null
           capture_id: string | null
           capture_lock_until: string | null
           consent_at: string
           consent_version: string
           created_at: string
+          currency: string
           id: string
           invite_id: string
           paid_at: string | null
@@ -1361,12 +1380,14 @@ export type Database = {
       reserve_payment_diagnostic: {
         Args: { p_hash: string; p_provider: string }
         Returns: {
+          amount_minor: number
           approval_url: string | null
           capture_id: string | null
           capture_lock_until: string | null
           consent_at: string
           consent_version: string
           created_at: string
+          currency: string
           id: string
           invite_id: string
           paid_at: string | null

@@ -1,5 +1,7 @@
 # Architecture rules
 
+- Private diagnostic offers use immutable server-stored invitation and attempt currency/amount bindings; BRL is Stripe-only with its own exact one-time catalog and marker, while existing USD and PayPal offers remain unchanged. Confirmation amounts come from the bound invitation, never client metadata.
+
 - Shared enrollment birth dates use an isolated native-select control with a hidden ISO value and first-select error focus; the existing shared profile schema remains the validation authority so restored data and server payloads stay compatible.
 
 - Build the pending-enrollment list through the shared pending-enrollments query, explicitly including NULL sources; legacy and ordinary checkout leads otherwise disappear under SQL inequality filters.

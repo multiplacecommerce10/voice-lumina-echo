@@ -48,13 +48,13 @@ test("welcome copy states US$1, Complete 7 days, no renewal — never a recurrin
 });
 
 function grantDb(grant: any, member: any) {
-  return { from: (t: string) => ({ select: () => { const q: any = { eq: () => q, maybeSingle: async () => ({ data: t === "payment_diagnostic_grants" ? grant : member, error: null }) }; return q; } }) };
+  return { from: (t: string) => ({ select: () => { const q: any = { eq: () => q, maybeSingle: async () => ({ data: t === "payment_diagnostic_invites" ? { currency: "usd", amount_minor: 100, stripe_only: false } : t === "payment_diagnostic_grants" ? grant : member, error: null }) }; return q; } }) };
 }
 const row = (sub: string) => ({ id: "1", attempts: 0, dedupe_key: "k", environment: "live", provider: "courtesy", kind: "welcome_confirmation", subscription_id: sub, recipient: "payer@other.com" } as any);
 
 test("recipient comes from the form grant, never the provider/outbox payer email", async () => {
   const t = await resolveCourtesyTarget(grantDb({ email: "Mom@Ex.com", full_name: "M", granted_at: "x", existing_access: false }, { provider: "courtesy", courtesy_access: true }), row("diag:inv"));
-  expect(t).toEqual({ to: "mom@ex.com", fullName: "M", existing: false });
+  expect(t).toEqual({ to: "mom@ex.com", fullName: "M", existing: false, receiptAmount: "US$ 1.00" });
 });
 
 test("existing Complete: emails still delivered once, with no-extension copy and no courtesy row required", async () => {
@@ -89,4 +89,10 @@ test("RPC failure first, then the scheduled worker retries and grants; only paid
 test("worker keeps going when one grant errors and reports it", async () => {
   const w = { rpc: async (n: string, a?: any) => n === "pending_diagnostic_grants" ? { data: ["a", "b"], error: null } : a.p_invite === "a" ? { data: null, error: new Error("x") } : { data: "already", error: null } };
   expect(await reconcileDiagnosticGrants(w, async () => {})).toEqual({ error: 1, already: 1 });
+});
+
+test("BRL receipt amount is resolved from the immutable invitation, not payer payload", async () => {
+ const d=grantDb({email:"fixture@example.invalid",granted_at:"x",existing_access:true},null);
+ const from=d.from; d.from=(t:string)=>t==="payment_diagnostic_invites" ? { select:()=>{const q:any={eq:()=>q,maybeSingle:async()=>({data:{currency:"brl",amount_minor:100,stripe_only:true},error:null})};return q;} } : from(t);
+ expect((await resolveCourtesyTarget(d,row("diag:inv"))).receiptAmount).toBe("R$ 1.00");
 });

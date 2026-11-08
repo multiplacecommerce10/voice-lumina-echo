@@ -7,7 +7,7 @@ import { readPrivateInvitation, savePrivateDiagnosticForm, startPrivateDiagnosti
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
 import { getStripe, getStripeEnvironment } from "@/lib/stripe";
 import { DIAGNOSTIC_DISPLAY_LABEL } from "@/lib/payment-diagnostic";
-import { PRIVATE_DIAGNOSTIC_VERSION } from "@/lib/private-diagnostic-rules";
+import { PRIVATE_DIAGNOSTIC_VERSION, PRIVATE_BRL_VERSION } from "@/lib/private-diagnostic-rules";
 import type { EnrollmentProfile } from "@/lib/enrollment-profile";
 import logo from "@/assets/tecendo-som-logo.png";
 import { TicketCheck } from "lucide-react";
@@ -78,8 +78,10 @@ function PrivatePaymentSession({ token }: { token: string }) {
     readStripe({ data: { token, attempt: stripeAttempt } }).then(r => { if ("error" in r) setError(r.error); else { setPayment({ status: r.status }); setClientSecret(r.clientSecret); } }).catch(() => setError("Stripe verification pending."));
   }, [token, stripeAttempt, invite?.valid]);
   let liveStripe = false; try { liveStripe = getStripeEnvironment() === "live"; } catch { /* fail closed */ }
+  const brl = invite?.valid && invite.currency === "brl";
+  const amountLabel = brl ? "R$ 1" : "US$ 1";
   async function choose(provider: "stripe" | "paypal") {
-    if (!profile || !consent || busy) return; setBusy(true); setError("");
+    if (!profile || !consent || busy || (brl && provider === "paypal")) return; setBusy(true); setError("");
     try { const result = await start({ data: { token, profile, consent: true, provider } });
       if ("error" in result) setError(result.error); else if (result.approvalUrl) window.location.assign(result.approvalUrl); else { setPayment({ status: result.status }); if (result.provider === "stripe") { setStripeAttempt(result.id); sessionStorage.setItem(`private-diagnostic-stripe:${token}`, result.id); setClientSecret(result.clientSecret); } }
     } catch { setError("Unable to open this test payment. Do not create another order."); } finally { setBusy(false); }
@@ -89,7 +91,7 @@ function PrivatePaymentSession({ token }: { token: string }) {
     try { const result = await returned({ data: { token, ...returnInput, action: "capture", confirm: true } }); if ("error" in result) setError(result.error ?? "Payment verification unavailable"); else setPayment(result); }
     catch { setError("Payment verification pending. Do not submit another payment."); } finally { setBusy(false); }
   }
-  return <main className="mx-auto max-w-3xl px-5 py-10" data-private-offer-layout="concise-v1" data-diagnostic-version={PRIVATE_DIAGNOSTIC_VERSION} data-diagnostic-form-storage="private-full-profile-v1" data-diagnostic-form-saved={profile ? "true" : "false"}>
+  return <main className="mx-auto max-w-3xl px-5 py-10" data-private-offer-layout="concise-v1" data-private-brl-version={PRIVATE_BRL_VERSION} data-diagnostic-currency={invite?.valid ? invite.currency : undefined} data-diagnostic-version={PRIVATE_DIAGNOSTIC_VERSION} data-diagnostic-form-storage="private-full-profile-v1" data-diagnostic-form-saved={profile ? "true" : "false"}>
     <img src={logo} alt="Tecendo Som" className="h-16 w-16 object-contain mb-5" />
     {!invite?.valid && <h1 className="font-display text-3xl text-foreground">Private payment invitation</h1>}
     {!token ? <p role="alert" className="mt-8">A private invitation is required.</p> : !invite ? <p className="mt-8">Checking invitation…</p> : !invite.valid ? <p role="alert" className="mt-8">{invite.error}</p> : <>
@@ -97,22 +99,22 @@ function PrivatePaymentSession({ token }: { token: string }) {
         <div className="absolute inset-x-0 top-0 h-1 bg-secondary" aria-hidden="true" />
         <div className="mb-4 flex items-center gap-3 text-secondary"><TicketCheck className="h-6 w-6 shrink-0" aria-hidden="true" /><span className="text-sm font-semibold">PRIVATE INVITATION</span></div>
         <h1 className="font-display text-3xl break-words tracking-normal">{DIAGNOSTIC_DISPLAY_LABEL}</h1>
-        <div className="mt-5 space-y-2"><p className="font-display text-5xl tracking-normal">US$ 1</p><p className="text-sm leading-relaxed text-muted-foreground">One-time payment per provider · No renewal</p></div>
+        <div className="mt-5 space-y-2"><p className="font-display text-5xl tracking-normal">{amountLabel}</p><p className="text-sm leading-relaxed text-muted-foreground">{brl ? "One-time Stripe payment" : "One-time payment per provider"} · No renewal</p></div>
         <p className="mt-5 text-base leading-relaxed">Enjoy 7 days of Complete access after your first confirmed payment.</p>
         <ul className="mt-4 space-y-2 text-sm leading-relaxed text-muted-foreground">
           <li>Welcome and access instructions go to the email in your form.</li>
-          <li>Testing a second provider will not extend your access.</li>
+          {!brl && <li>Testing a second provider will not extend your access.</li>}
         </ul>
         <div className="mt-5 space-y-2 border-t border-border pt-4 text-sm leading-relaxed text-muted-foreground">
           <p>Payment to Tecendo Som</p>
           {invite.expiresAt && <p>Invitation valid until <time dateTime={invite.expiresAt}>{new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(new Date(invite.expiresAt))}</time>.</p>}
-          <p>Your bank may apply currency conversion fees.</p>
+          <p>{brl ? "Brazilian-issued cards are charged in BRL for this private test" : "Your bank may apply currency conversion fees."}</p>
         </div>
       </article>
       {error && <p role="alert" className="my-5 text-destructive">{error}</p>}
       {stripeAttempt ? <section className="mt-8 border-t border-border pt-6"><h2 className="text-xl">Stripe — {DIAGNOSTIC_DISPLAY_LABEL}</h2>
-        {payment?.status === "paid" ? <p className="my-4">US$1 payment confirmed. Your 7-day courtesy access and welcome emails are on the way.</p> : clientSecret && liveStripe ? <EmbeddedCheckoutProvider stripe={getStripe()} options={{ clientSecret }}><EmbeddedCheckout /></EmbeddedCheckoutProvider> : <p className="my-4">{payment?.status === "expired" ? "Checkout expired. No payment confirmed." : "Payment verification pending."}</p>}
-        <Button className="mt-5" variant="outline" onClick={() => { setStripeAttempt(""); sessionStorage.removeItem(`private-diagnostic-stripe:${token}`); setClientSecret(null); setPayment(null); read({ data: { token } }).then(setInvite); }}>Other provider</Button>
+        {payment?.status === "paid" ? <p className="my-4">{amountLabel} payment confirmed. Your 7-day courtesy access and welcome emails are on the way.</p> : clientSecret && liveStripe ? <EmbeddedCheckoutProvider stripe={getStripe()} options={{ clientSecret }}><EmbeddedCheckout /></EmbeddedCheckoutProvider> : <p className="my-4">{payment?.status === "expired" ? "Checkout expired. No payment confirmed." : "Payment verification pending."}</p>}
+        {!brl && <Button className="mt-5" variant="outline" onClick={() => { setStripeAttempt(""); sessionStorage.removeItem(`private-diagnostic-stripe:${token}`); setClientSecret(null); setPayment(null); read({ data: { token } }).then(setInvite); }}>Other provider</Button>}
       </section> : returnInput ? <section className="mt-8 border-t border-border pt-6"><h2 className="text-xl">PayPal payment confirmation</h2>
         <p className="my-4">{payment?.status === "paid" ? "US$1 payment confirmed. Your 7-day courtesy access and welcome emails are on the way." : payment?.status === "cancelled" ? "Payment cancelled. No payment was confirmed." : payment?.approved ? "PayPal approval verified. Confirm the real US$1 payment to Tecendo Som below." : "Payment is not confirmed. Awaiting verification."}</p>
         {payment?.approved && <Button disabled={busy} onClick={pay}>{busy ? "Verifying…" : "Pay US$1"}</Button>}
@@ -123,8 +125,8 @@ function PrivatePaymentSession({ token }: { token: string }) {
         setProfile(values);
       }} /></div> : <section className="mt-8 border-t border-border pt-6">
         <h2 className="text-xl">Choose your test payment</h2>
-        <label className="flex items-start gap-3 my-5 text-sm leading-relaxed"><input className="mt-1 shrink-0" type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>I authorize a one-time US$1 payment to Tecendo Som through the provider I select. No automatic renewal.</span></label>
-        <div className="flex flex-wrap gap-4"><Button disabled={busy || !consent || !liveStripe || invite.attempts?.some(a => a.provider === "stripe" && ["paid", "cancelled", "failed", "expired"].includes(a.status))} onClick={() => choose("stripe")}>Continue to Stripe — US$1</Button><Button disabled={busy || !consent || invite.attempts?.some(a => a.provider === "paypal" && ["paid", "cancelled", "failed", "expired"].includes(a.status))} onClick={() => choose("paypal")}>{busy ? "Preparing…" : "Continue to PayPal — US$1"}</Button></div>
+        <label className="flex items-start gap-3 my-5 text-sm leading-relaxed"><input className="mt-1 shrink-0" type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>I authorize a one-time {amountLabel} payment to Tecendo Som {brl ? "through Stripe" : "through the provider I select"}. No automatic renewal.</span></label>
+        <div className="flex flex-wrap gap-4"><Button disabled={busy || !consent || !liveStripe || invite.attempts?.some(a => a.provider === "stripe" && ["paid", "cancelled", "failed", "expired"].includes(a.status))} onClick={() => choose("stripe")}>Continue to Stripe — {amountLabel}</Button>{!brl && <Button disabled={busy || !consent || invite.attempts?.some(a => a.provider === "paypal" && ["paid", "cancelled", "failed", "expired"].includes(a.status))} onClick={() => choose("paypal")}>{busy ? "Preparing…" : "Continue to PayPal — US$1"}</Button>}</div>
         {!liveStripe && <p className="mt-5 text-sm text-muted-foreground">Live Stripe checkout is available on the published site only.</p>}
         <ul className="mt-5 text-sm">{invite.attempts?.map(a => <li key={a.id}>{a.provider}: {a.status}</li>)}</ul>
       </section>}

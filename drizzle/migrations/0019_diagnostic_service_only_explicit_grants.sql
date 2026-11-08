@@ -1,0 +1,3 @@
+REVOKE ALL ON public.payment_diagnostic_invites, public.payment_diagnostic_attempts, public.payment_diagnostic_events FROM PUBLIC, anon, authenticated;
+GRANT ALL ON public.payment_diagnostic_invites, public.payment_diagnostic_attempts, public.payment_diagnostic_events TO service_role;
+COMMENT ON TABLE public.payment_diagnostic_invites IS 'Service-only hashed private invitations; immutable USD or Stripe-only BRL offer. Explicit grants complement service-only RLS.';

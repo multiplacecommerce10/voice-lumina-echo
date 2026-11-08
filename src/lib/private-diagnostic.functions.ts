@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { assertDiagnosticOrigin, diagnosticSaveSchema, diagnosticFormSchema, invitationTokenSchema, PRIVATE_DIAGNOSTIC_VERSION, DIAGNOSTIC_TAX_NOTICE } from "./private-diagnostic-rules";
+import { assertDiagnosticOrigin, diagnosticSaveSchema, diagnosticFormSchema, invitationTokenSchema, PRIVATE_DIAGNOSTIC_VERSION, diagnosticOffer } from "./private-diagnostic-rules";
 
 function checkOrigin() { const req = getRequest(); assertDiagnosticOrigin(req.headers.get("origin"), new URL(req.url).origin, req.headers.get("sec-fetch-site")); }
 export const readPrivateInvitation = createServerFn({ method: "POST" }).inputValidator(z.object({ token: invitationTokenSchema })).handler(async ({ data }) => {
@@ -12,7 +12,8 @@ export const readPrivateInvitation = createServerFn({ method: "POST" }).inputVal
     const invite = await diagnosticInvite(supabaseAdmin, data.token);
     const { data: attempts, error } = await supabaseAdmin.from("payment_diagnostic_attempts").select("id,provider,status").eq("invite_id", invite.id);
     if (error) throw new Error("Unable to read test status");
-    return { valid: true, expiresAt: invite.expires_at, attempts: attempts ?? [], taxNotice: DIAGNOSTIC_TAX_NOTICE, version: PRIVATE_DIAGNOSTIC_VERSION };
+    const offer = diagnosticOffer(invite);
+    return { valid: true, expiresAt: invite.expires_at, attempts: attempts ?? [], currency: offer.currency, stripeOnly: offer.stripeOnly, taxNotice: "Automatic tax calculation is off for this private test, as authorized by the owner. This does not establish a tax exemption.", version: PRIVATE_DIAGNOSTIC_VERSION };
   } catch (error) { return { valid: false, error: error instanceof Error && error.message === "Invalid, revoked or expired invitation" ? "Invalid, revoked or expired private invitation." : "Invitation verification is temporarily unavailable. Please try again." }; }
 });
 export const savePrivateDiagnosticForm = createServerFn({ method: "POST" }).inputValidator(diagnosticSaveSchema).handler(async ({ data }) => {

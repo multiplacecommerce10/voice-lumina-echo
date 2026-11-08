@@ -3,6 +3,7 @@
 // invitation (never recurring, never a subscription) and queue welcome + account
 // access emails once through the durable outbox. Existing members are untouched.
 import type { OutboxRow } from "./notification-outbox";
+import { diagnosticOffer } from "./private-diagnostic-rules";
 
 export const COURTESY_PROVIDER = "courtesy";
 
@@ -79,7 +80,10 @@ export async function resolveCourtesyTarget(db: any, row: OutboxRow) {
       .eq("stripe_subscription_id", sub).eq("environment", "live").maybeSingle();
     if (!s || s.provider !== COURTESY_PROVIDER || s.courtesy_access !== true) throw new Error("courtesy row missing");
   }
-  return { to: String(g.email).toLowerCase(), fullName: g.full_name as string | null, existing: g.existing_access === true };
+  const { data: invite, error: inviteError } = await db.from("payment_diagnostic_invites").select("currency,amount_minor,stripe_only").eq("id", sub.slice(5)).maybeSingle();
+  if (inviteError || !invite) throw new Error("courtesy payment offer missing");
+  const offer = diagnosticOffer(invite);
+  return { to: String(g.email).toLowerCase(), fullName: g.full_name as string | null, existing: g.existing_access === true, receiptAmount: offer.receiptAmount };
 }
 
 export const EXISTING_ACCESS_NOTE =
@@ -96,12 +100,12 @@ export async function deliverCourtesy(row: OutboxRow): Promise<void> {
     const { COURSE_START_UTC, formatClassInTimeZone, getNextClassAfter } = await import("./course-schedule");
     draft = withCourtesyNote(buildConfirmationEmail({
       fullName: s.full_name, email: to, planIntended: null, tier: "complete", durationMonths: null,
-      totalFormatted: "US$ 1.00 — Special guest (one-time, no renewal)", amountPerCycleFormatted: null,
+      totalFormatted: `${t.receiptAmount} — Special guest (one-time, no renewal)`, amountPerCycleFormatted: null,
       isRecurring: false, isRenewal: false, billingIntervalMonths: null, nextChargeAtFormatted: null,
       courseStartFormatted: formatClassInTimeZone(COURSE_START_UTC, "UTC").full,
       nextClassFormatted: formatClassInTimeZone(getNextClassAfter(new Date()), "UTC").full,
       membershipUrl: EMAIL_BRAND.membershipUrl,
-    }), t.existing ? EXISTING_ACCESS_NOTE : COURTESY_NOTE);
+    }), (t.existing ? EXISTING_ACCESS_NOTE : COURTESY_NOTE).replace("US$ 1.00", t.receiptAmount));
   } else if (row.kind === "account_access") {
     const { prepareStripeAccountAccess } = await import("./stripe-account-access.server");
     // Existing accounts keep their password; only a newly created account gets a choose-password link.

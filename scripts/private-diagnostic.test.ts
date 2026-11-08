@@ -1,18 +1,20 @@
 import { test, expect, mock, beforeEach } from "bun:test";
 import { assertPayPalOrder, invitationValid, diagnosticFormSchema, assertDiagnosticOrigin, PAYPAL_DIAGNOSTIC_PAYEE } from "../src/lib/private-diagnostic-rules";
-import { diagnosticStart, diagnosticPayPalReturn, hashDiagnosticToken } from "../src/lib/private-diagnostic.server";
+import { diagnosticStart, diagnosticPayPalReturn, hashDiagnosticToken, applyPrivateStripeDiagnostic, diagnosticStripeRead } from "../src/lib/private-diagnostic.server";
 import { classifyDiagnosticEvent } from "../src/lib/payment-diagnostic";
 
 const token = "a".repeat(64), id = "11111111-1111-4111-8111-111111111111";
 const profile = { fullName: "Local Fixture", birthDate: "1980-01-01", email: "fixture@example.com", phone: "+55 123456", country: "Brazil", city: "Local", address: "Fixture only", profession: "Educator", musicLevel: "Beginner", academicExperience: "None yet", musicalPreferences: "Singing", motivation: "Local test" };
 let row: any, valid = true, createCalls = 0, captures = 0, approved = true, completed = false, pendingCapture = false;
-let stripeCreates = 0;
+let stripeCreates = 0, currency = "usd", paidHooks = 0;
+let sessionOverrides: any = {};
+const offer = () => currency === "brl" ? { marker: "conscious_voice_brl1_v1", name: "Special Guest — R$ 1", key: "conscious_voice_private_guest_brl" } : { marker: "conscious_voice_usd1_v1", name: "Convidado especial — US$ 1", key: "conscious_voice_private_guest" };
 let stripeParams: any;
-const stripeSession = () => ({ id: "cs_live_fixture", livemode: true, metadata: { payment_diagnostic: "conscious_voice_usd1_v1", diagnostic_attempt: id }, mode: "payment", currency: "usd", amount_total: 100, ui_mode: "embedded_page", status: "open", payment_status: "unpaid", client_secret: "local-fixture-only", automatic_tax: { enabled: false }, total_details: { amount_tax: 0, amount_discount: 0 } });
+const stripeSession = () => ({ id: "cs_live_fixture", livemode: true, metadata: { payment_diagnostic: offer().marker, diagnostic_attempt: id }, mode: "payment", currency, amount_total: 100, ui_mode: "embedded_page", status: "open", payment_status: "unpaid", client_secret: "local-fixture-only", automatic_tax: { enabled: false }, total_details: { amount_tax: 0, amount_discount: 0 }, ...sessionOverrides });
 let profiles = 0; const P = profile;
 mock.module("../src/lib/private-diagnostic-form.server", () => ({ requireSavedDiagnosticForm: async () => { profiles++; } }));
-mock.module("../src/lib/private-diagnostic-grant.server", () => ({ recordDiagnosticProfile: async () => { profiles++; }, afterDiagnosticPaid: async () => "granted" }));
-mock.module("../src/lib/stripe.server", () => ({ createStripeClient: () => ({ prices: { list: async () => ({ data: [{ currency: "usd", unit_amount: 100, type: "one_time", product: "prod_fixture" }] }) }, products: { retrieve: async () => ({ name: "Convidado especial — US$ 1", metadata: { lovable_external_id: "conscious_voice_private_guest" } }) }, checkout: { sessions: { create: async (params: any, options: any) => { stripeCreates++; stripeParams = params; expect(options.idempotencyKey).toBe(`cv-diag-stripe-${id}`); return stripeSession(); }, retrieve: async () => stripeSession() } } }) }));
+mock.module("../src/lib/private-diagnostic-grant.server", () => ({ recordDiagnosticProfile: async () => { profiles++; }, afterDiagnosticPaid: async () => { paidHooks++; return "granted"; } }));
+mock.module("../src/lib/stripe.server", () => ({ createStripeClient: () => ({ prices: { list: async () => ({ data: [{ currency, unit_amount: 100, type: "one_time", product: "prod_fixture" }] }) }, products: { retrieve: async () => ({ name: offer().name, metadata: { lovable_external_id: offer().key } }) }, checkout: { sessions: { create: async (params: any, options: any) => { stripeCreates++; stripeParams = params; expect(options.idempotencyKey).toBe(`cv-diag-stripe-${id}`); return stripeSession(); }, retrieve: async () => stripeSession() } } }) }));
 function order() { return { id: "TESTORDER12345", intent: "CAPTURE", status: completed ? "COMPLETED" : approved ? "APPROVED" : "PAYER_ACTION_REQUIRED", purchase_units: [{ reference_id: id, custom_id: `conscious_voice_usd1_v1:${id}`, payee: { merchant_id: PAYPAL_DIAGNOSTIC_PAYEE }, amount: { value: "1.00", currency_code: "USD" }, ...(completed ? { payments: { captures: [{ id: "CAPTUREFIXTURE", status: pendingCapture ? "PENDING" : "COMPLETED", amount: { value: "1.00", currency_code: "USD" } }] } } : {}) }], links: [{ rel: "payer-action", href: "https://www.paypal.com/checkoutnow?token=TESTORDER12345" }] }; }
 const fetchSpy = mock(async (url: any, init: any = {}) => {
   if (String(url).includes("oauth2")) return Response.json({ access_token: "local-fixture" });
@@ -24,14 +26,15 @@ mock.module("../src/lib/paypal.server", () => ({ getAccessToken: async () => "lo
 const db: any = {
   from(table: string) {
     if (!table.startsWith("payment_diagnostic_")) throw new Error(`Forbidden course table: ${table}`);
-    const q: any = { select: () => q, eq: () => q, maybeSingle: async () => ({ data: table.endsWith("invites") ? valid ? { id: "invite-fixture", expires_at: new Date(Date.now() + 3600000).toISOString(), revoked_at: null } : null : row, error: null }), update(fields: any) { return { eq: async () => { Object.assign(row, fields); return { error: null }; } }; } }; return q;
+    const q: any = { select: () => q, eq: () => q, maybeSingle: async () => ({ data: table.endsWith("invites") ? valid ? { id: "invite-fixture", currency, amount_minor: 100, stripe_only: currency === "brl", expires_at: new Date(Date.now() + 3600000).toISOString(), revoked_at: null } : null : row, error: null }), update(fields: any) { return { eq: async () => { Object.assign(row, fields); return { error: null }; } }; } }; return q;
   },
-  async rpc(name: string, args: any) { if (name === "reserve_payment_diagnostic") { row ??= { id, invite_id: "invite-fixture", provider: args.p_provider, created_at: new Date().toISOString(), status: "reserved", provider_id: null }; return { data: [row], error: null }; }
+  async rpc(name: string, args: any) { if (name === "reserve_payment_diagnostic") { row ??= { id, invite_id: "invite-fixture", provider: args.p_provider, currency, amount_minor: 100, created_at: new Date().toISOString(), status: "reserved", provider_id: null }; return { data: [row], error: null }; }
+    if (name === "apply_diagnostic_stripe_event") { row.status = args.p_status; return { data: true, error: null }; }
     if (name === "claim_diagnostic_creation") { if (row.capture_lock_until) return { data: [], error: null }; row.capture_lock_until = "fixture-lock"; return { data: [row], error: null }; }
     if (name === "cancel_diagnostic_attempt") { if (row.status === "capturing") return {data:false,error:null}; row.status="cancelled"; return {data:true,error:null}; }
     if (name === "claim_diagnostic_capture") { if (row.status === "capturing") return { data: [], error: null }; row.status = "capturing"; return { data: [row], error: null }; } throw new Error("Forbidden RPC"); },
 };
-beforeEach(() => { row = null; valid = true; createCalls = 0; captures = 0; stripeCreates = 0; approved = true; completed = false; pendingCapture = false; globalThis.fetch = fetchSpy as any; fetchSpy.mockClear(); });
+beforeEach(() => { row = null; currency = "usd"; sessionOverrides = {}; paidHooks = 0; valid = true; createCalls = 0; captures = 0; stripeCreates = 0; approved = true; completed = false; pendingCapture = false; globalThis.fetch = fetchSpy as any; fetchSpy.mockClear(); });
 test("expired, revoked, invalid invitations fail", async () => {
   expect(invitationValid(null)).toBe(false); expect(invitationValid({ expires_at: "invalid", revoked_at: null })).toBe(false);
   expect(invitationValid({ expires_at: new Date(Date.now()-1).toISOString(), revoked_at: null })).toBe(false);
@@ -70,3 +73,37 @@ test("wrong amount, currency, payee, reference or subscription intent denied", (
 });
 test("diagnostic webhook facts reject excess tax totals, currency and subscriptions", () => { const e:any={livemode:true,type:"checkout.session.completed",data:{object:{metadata:{payment_diagnostic:"conscious_voice_usd1_v1"},amount_total:100,currency:"usd",mode:"payment"}}}; expect(classifyDiagnosticEvent(e,"live")?.valid).toBe(true); for(const fields of [{amount_total:101},{currency:"brl"},{mode:"subscription"},{subscription:"sub_x"}]) expect(classifyDiagnosticEvent({...e,data:{object:{...e.data.object,...fields}}},"live")?.valid).toBe(false); });
 test("checkout cannot start without the validated form profile", async () => { await expect(diagnosticStart(db, token, "paypal")).rejects.toThrow(/enrollment form/); });
+
+for (const c of ["usd", "brl"]) {
+ test(`${c}: exact bound Stripe paid event grants; pending never grants`, async () => {
+  currency=c; await diagnosticStart(db,token,"stripe",P);
+  const e:any={id:"evt_fixture",livemode:true,type:"checkout.session.completed",data:{object:stripeSession()}};
+  await applyPrivateStripeDiagnostic(db,e); expect(row.status).toBe("pending"); expect(paidHooks).toBe(0);
+  sessionOverrides={payment_status:"paid",status:"complete"}; e.data.object=stripeSession();
+  await applyPrivateStripeDiagnostic(db,e); expect(row.status).toBe("paid"); expect(paidHooks).toBe(1);
+ });
+ test(`${c}: amount/currency/environment/session/marker mismatches reject before grant`, async () => {
+  currency=c; await diagnosticStart(db,token,"stripe",P);
+  for(const change of [{amount_total:101},{currency:c==="brl"?"usd":"brl"},{livemode:false},{id:"cs_other"},{metadata:{payment_diagnostic:"wrong",diagnostic_attempt:id}}]) {
+   sessionOverrides=change;
+   await expect(diagnosticStripeRead(db,token,id)).rejects.toThrow();
+  }
+  sessionOverrides={};
+  const e:any={id:"evt_wrong",livemode:false,type:"checkout.session.completed",data:{object:stripeSession()}};
+  await expect(applyPrivateStripeDiagnostic(db,e)).rejects.toThrow();
+  e.livemode=true; e.data.object.id="cs_other";
+  await expect(applyPrivateStripeDiagnostic(db,e)).rejects.toThrow(); expect(paidHooks).toBe(0);
+ });
+}
+test("BRL rejects PayPal before reservation, storage read or any provider call", async () => {
+ currency="brl"; const previous=profiles;
+ await expect(diagnosticStart(db,token,"paypal",P)).rejects.toThrow(/offer mismatch/);
+ expect(row).toBeNull(); expect(profiles).toBe(previous); expect(createCalls).toBe(0); expect(stripeCreates).toBe(0);
+});
+test("BRL concurrent Stripe starts reuse one exact one-time 100 BRL session", async () => {
+ currency="brl"; await Promise.allSettled([diagnosticStart(db,token,"stripe",P),diagnosticStart(db,token,"stripe",P)]);
+ expect(stripeCreates).toBe(1); expect(stripeParams.line_items[0].price_data.currency).toBe("brl");
+ expect(stripeParams.line_items[0].price_data.unit_amount).toBe(100); expect(stripeParams.metadata.payment_diagnostic).toBe("conscious_voice_brl1_v1");
+ expect(stripeParams.automatic_tax).toBeUndefined(); expect(stripeParams.mode).toBe("payment");
+ await diagnosticStart(db,token,"stripe",P); expect(stripeCreates).toBe(1); expect(paidHooks).toBe(0);
+});

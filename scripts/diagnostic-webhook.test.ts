@@ -80,3 +80,8 @@ test("new account chooses password through link without any password mutation", 
   expect(admin.createUser.mock.calls[0]?.[0].password).toBeUndefined();
   expect(generateLink.mock.calls[0]?.[0].type).toBe("recovery"); expect(accountUpdate).not.toHaveBeenCalled();
 });
+for (const signature of ["valid", "false", "unsigned"] as const) test(`BRL ${signature} signature gate preserves course isolation`,async()=>{
+ const e=event(); e.data.object.currency="brl"; e.data.object.metadata={payment_diagnostic:"conscious_voice_brl1_v1"};
+ expect((await deliver(e,signature)).status).toBe(signature==="valid"?200:400);
+ expect(lifecycle).not.toHaveBeenCalled(); expect(sendMail).not.toHaveBeenCalled(); expect(createUser).not.toHaveBeenCalled();
+});

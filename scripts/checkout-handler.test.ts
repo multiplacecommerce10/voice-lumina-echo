@@ -12,7 +12,7 @@ let lead: any;
 let price: any;
 const create = mock(async () => ({ id: "cs_test_fixture", client_secret: "local-fixture" }));
 const update = mock(() => ({ eq: async () => ({ error: null }) }));
-mock.module("@/integrations/supabase/client.server", () => ({ supabaseAdmin: { from: () => ({
+mock.module("@/integrations/supabase/client.server", () => ({ supabaseAdmin: { rpc: async () => ({ data: { id: "local-attempt", session_id: null }, error: null }), from: () => ({
   select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: lead, error: null }) }) }), update,
 }) } }));
 const retrieve = mock(async () => ({ subscription: { status: "active", items: { data: [{ price }] } }, line_items: { data: [] } }));

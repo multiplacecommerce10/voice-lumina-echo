@@ -82,6 +82,7 @@ export async function processSubscriptionEvent(params: {
       // Association ONLY — access is granted by invoice.paid.
       const row = await associateCheckout({
         env,
+        eventId: event.id,
         subscriptionId,
         customerId:
           typeof obj.customer === "string" ? obj.customer : (obj.customer?.id ?? null),
@@ -91,7 +92,7 @@ export async function processSubscriptionEvent(params: {
         metadata: obj?.metadata ?? null,
       });
       const sub = await retrieveSub(env, subscriptionId);
-      const synced = sub ? await syncSubscription({ env, sub }) : row;
+      const synced = sub ? await syncSubscription({ env, sub, eventId: `${event.id}:sync` }) : row;
       return {
         row: synced ?? row,
         ctx: {
@@ -116,7 +117,7 @@ export async function processSubscriptionEvent(params: {
         const meta = before.metadata;
         if (error || !lead || !admissionAllowsCheckout(lead.admission_status) || !profileSchema.safeParse(profileFromAnswers({ fullName: lead.full_name, email: lead.email, phone: lead.phone }, lead.answers)).success || !consent || !Number.isFinite(Date.parse(consent.acceptedAt)) || ["termsVersion", "privacyVersion", "refundVersion", "acceptedAt", "immediateAccessAt"].some((key, index) => consent[key] !== meta[["terms_version", "privacy_version", "refund_version", "legal_accepted_at", "immediate_access_requested_at"][index]])) throw new Error("Course invoice admission or saved consent mismatch");
       }
-      const applied = await applyInvoicePaid({ env, invoice: obj, sub: before });
+      const applied = await applyInvoicePaid({ env, invoice: obj, sub: before, eventId: event.id });
       return {
         row: applied.row,
         ctx: {
@@ -136,8 +137,8 @@ export async function processSubscriptionEvent(params: {
       const sub = await retrieveSub(env, subscriptionId);
       const applied =
         type === "invoice.payment_failed"
-          ? await applyInvoicePaymentFailed({ env, invoice: obj, sub })
-          : await applyInvoiceActionRequired({ env, invoice: obj, sub });
+          ? await applyInvoicePaymentFailed({ env, invoice: obj, sub, eventId: event.id })
+          : await applyInvoiceActionRequired({ env, invoice: obj, sub, eventId: event.id });
       return {
         row: applied.row,
         ctx: {
@@ -153,7 +154,7 @@ export async function processSubscriptionEvent(params: {
     case "customer.subscription.deleted":
     case "customer.subscription.paused":
     case "customer.subscription.resumed": {
-      const row = await syncSubscription({ env, sub: obj });
+      const row = await syncSubscription({ env, sub: await retrieveSub(env, obj.id, true), eventId: event.id });
       return {
         row,
         ctx: {
@@ -176,7 +177,7 @@ export async function processSubscriptionEvent(params: {
           // non-fatal: refund review can proceed without the subscription link
         }
       }
-      const row = await flagRefundReview({ env, subscriptionId });
+      const row = await flagRefundReview({ env, subscriptionId, eventId: event.id });
       return { row, ctx: { accessStatus: row?.access_status ?? null }, duplicate: false };
     }
 

@@ -725,9 +725,9 @@ check(
 );
 check(
   "reconciliation checks Supabase errors instead of synthesizing suspension",
-  stateSrc.includes("reconcileSubscriptionAccess failed") &&
+  stateSrc.includes("Stripe lifecycle persistence unavailable") &&
     stateSrc.includes("reconcile scan failed") &&
-    stateSrc.includes("reconcile update failed") &&
+    stateSrc.includes("Stripe reconciliation changed concurrently; retry") &&
     !stateSrc.includes('{ ...row, access_status: "suspended" }'),
 );
 check(

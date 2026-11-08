@@ -1,0 +1,7 @@
+import { expect,test } from 'bun:test';
+import {reserveStripeAttempt} from '../src/lib/stripe-checkout-attempt.server';
+const input={leadId:'fixture',environment:'sandbox',priceId:'complete_sub_3m_v1',consent:{acceptedAt:'fixture'}};
+test('open provider session is reused without creation',async()=>{let writes=0;const r=await reserveStripeAttempt({rpc:async()=>({data:{id:'a',session_id:'cs_a'}}),from:()=>{writes++;}}, {checkout:{sessions:{retrieve:async()=>({id:'cs_a',status:'open'})}}},input);expect(r.session.id).toBe('cs_a');expect(writes).toBe(0)});
+test('completed checkout never rotates or creates another invoice',async()=>{await expect(reserveStripeAttempt({rpc:async()=>({data:{id:'a',session_id:'cs_a'}})}, {checkout:{sessions:{retrieve:async()=>({status:'complete'})}}},input)).rejects.toThrow('already been completed')});
+test('ambiguous reserve failure cannot proceed to provider',async()=>{let reads=0;await expect(reserveStripeAttempt({rpc:async()=>({error:{message:'fixture'}})}, {checkout:{sessions:{retrieve:async()=>{reads++}}}},input)).rejects.toThrow();expect(reads).toBe(0)});
+test('only confirmed expired checkout rotates',async()=>{let reserve=0,close=0;const db={rpc:async()=>({data:reserve++===0?{id:'a',session_id:'cs_a'}:{id:'b',session_id:null}}),from:()=>{const q:any={update:()=>q,eq:()=>q,is:async()=>{close++;return{error:null}}};return q}};const r=await reserveStripeAttempt(db,{checkout:{sessions:{retrieve:async()=>({status:'expired'})}}},input);expect(r.attempt.id).toBe('b');expect(close).toBe(1)});

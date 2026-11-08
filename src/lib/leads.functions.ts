@@ -64,8 +64,8 @@ export const captureLead = createServerFn({ method: "POST" })
         if (!existing || !["captured", "checkout_started", "abandoned"].includes(existing.status ?? "")) return { error: "This enrollment can no longer be resumed." };
         if (existing.email?.toLowerCase() !== data.email.toLowerCase()) return { error: "This enrollment link belongs to a different email address." };
         const oldAnswers = z.record(z.string(), z.unknown()).safeParse(existing.answers);
-        const { error: updateError } = await supabaseAdmin.from("leads").update({ ...values, answers: { ...(oldAnswers.success ? oldAnswers.data : {}), ...values.answers } }).eq("id", existing.id).in("status", ["captured", "checkout_started", "abandoned"]);
-        if (updateError) return { error: "Could not save your details. Please try again." };
+        const { data: updatedRows, error: updateError } = await supabaseAdmin.from("leads").update({ ...values, answers: { ...(oldAnswers.success ? oldAnswers.data : {}), ...values.answers } }).eq("id", existing.id).eq("status", existing.status).select("id");
+        if (updateError || updatedRows?.length !== 1) return { error: "Your enrollment changed while saving. Please reopen your enrollment link." };
         return { leadId: existing.id, resumeCode: data.resumeCode };
       }
       const { data: row, error } = await supabaseAdmin

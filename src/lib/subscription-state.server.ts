@@ -20,6 +20,7 @@ export type AccessStatus =
 
 export type MemberSubscriptionRow = {
   id: string;
+  row_version: number;
   lead_id: string | null;
   email: string | null;
   full_name: string | null;
@@ -45,6 +46,7 @@ export type MemberSubscriptionRow = {
   paid_active_months: number;
   paid_invoice_count: number;
   processed_invoice_ids: string[];
+  processed_event_ids?: string[];
   metadata: Record<string, unknown> | null;
 };
 
@@ -77,23 +79,17 @@ async function writeRow(
   patch: Record<string, unknown>,
 ): Promise<MemberSubscriptionRow | null> {
   const db = await admin();
-  const { data, error } = await db
-    .from("member_subscriptions")
-    .upsert(
-      {
-        stripe_subscription_id: subscriptionId,
-        environment: env,
-        ...patch,
-      },
-      { onConflict: "stripe_subscription_id,environment" },
-    )
-    .select("*")
-    .maybeSingle();
-  if (error) {
-    console.error("[subscription-state] upsert failed:", error.message);
-    throw error;
-  }
-  return (data as MemberSubscriptionRow | null) ?? null;
+  const { data, error } = await db.rpc("cas_stripe_member", { p_subscription: subscriptionId, p_env: env, p_version: patch.__version ?? null, p_patch: Object.fromEntries(Object.entries(patch).filter(([key]) => key !== "__version")) } as any);
+  if (error) throw new Error("Stripe lifecycle persistence unavailable");
+  if (!data) throw new StripeStateConflict();
+  return data as MemberSubscriptionRow;
+
+}
+
+class StripeStateConflict extends Error {}
+async function retryStripeState<T>(operation: () => Promise<T>): Promise<T> {
+  for (let i = 0; i < 8; i++) { try { return await operation(); } catch (error) { if (!(error instanceof StripeStateConflict)) throw error; } }
+  throw new Error("Stripe lifecycle contention; retry delivery");
 }
 
 /** Shared fields derived from a Stripe Subscription object. */
@@ -127,8 +123,9 @@ function stripNulls(o: Record<string, unknown>) {
  * Associates lead/customer/subscription at checkout time. Never grants access:
  * `access_status` is only ever moved forward by `invoice.paid`.
  */
-export async function associateCheckout(params: {
+async function associateCheckoutOnce(params: {
   env: StripeEnv;
+  eventId?: string;
   subscriptionId: string;
   customerId: string | null;
   leadId: string | null;
@@ -138,6 +135,8 @@ export async function associateCheckout(params: {
 }): Promise<MemberSubscriptionRow | null> {
   const existing = await readRow(params.subscriptionId, params.env);
   return writeRow(params.subscriptionId, params.env, {
+    __version: existing?.row_version ?? null,
+    __event: params.eventId,
     ...stripNulls({
       stripe_customer_id: params.customerId,
       lead_id: params.leadId,
@@ -150,14 +149,19 @@ export async function associateCheckout(params: {
 }
 
 /** Refreshes stored subscription facts. Does not change access by itself. */
-export async function syncSubscription(params: {
+async function syncSubscriptionOnce(params: {
   env: StripeEnv;
+  eventId?: string;
   sub: any;
 }): Promise<MemberSubscriptionRow | null> {
   const sub = params.sub;
   if (!sub?.id) return null;
   const facts = subscriptionFacts(sub);
   const existing = await readRow(sub.id, params.env);
+  if (facts.current_period_end && existing?.current_period_end && Date.parse(facts.current_period_end) < Date.parse(existing.current_period_end)) {
+    facts.current_period_end = existing.current_period_end;
+    facts.current_period_start = existing.current_period_start;
+  }
 
   let access: AccessStatus = existing?.access_status ?? "pending";
   // Canceled/unpaid in Stripe: keep access until the paid period truly ends.
@@ -177,6 +181,8 @@ export async function syncSubscription(params: {
   }
 
   return writeRow(sub.id, params.env, {
+    __version: existing?.row_version ?? null,
+    __event: params.eventId,
     ...facts,
     metadata: sub.metadata ?? existing?.metadata ?? null,
     lead_id: existing?.lead_id ?? (sub.metadata?.lead_id as string | undefined) ?? null,
@@ -189,8 +195,9 @@ export async function syncSubscription(params: {
  * - initial: access active, `student_enrolled_at` set once and never reset
  * - renewal: period extended, entitlements preserved, grace/failure cleared
  */
-export async function applyInvoicePaid(params: {
+async function applyInvoicePaidOnce(params: {
   env: StripeEnv;
+  eventId?: string;
   invoice: any;
   sub: any | null;
 }): Promise<{
@@ -224,6 +231,10 @@ export async function applyInvoicePaid(params: {
   }
 
   const facts = params.sub ? subscriptionFacts(params.sub) : null;
+  if (facts?.current_period_end && existing?.current_period_end && Date.parse(facts.current_period_end) < Date.parse(existing.current_period_end)) {
+    facts.current_period_end = existing.current_period_end;
+    facts.current_period_start = existing.current_period_start;
+  }
   const paidAt =
     iso(invoice?.status_transitions?.paid_at) ?? iso(invoice?.created) ?? new Date().toISOString();
   const isRenewal = (existing?.paid_invoice_count ?? 0) > 0;
@@ -236,6 +247,8 @@ export async function applyInvoicePaid(params: {
   const months = facts?.duration_months ?? existing?.duration_months ?? null;
 
   const row = await writeRow(subscriptionId, params.env, {
+    __version: existing?.row_version ?? null,
+    __event: params.eventId,
     ...(facts ? stripNulls(facts) : {}),
     cancel_at_period_end: facts?.cancel_at_period_end ?? existing?.cancel_at_period_end ?? false,
     last_invoice_id: invoiceId,
@@ -251,7 +264,7 @@ export async function applyInvoicePaid(params: {
     processed_invoice_ids: invoiceId
       ? [...(existing?.processed_invoice_ids ?? []), invoiceId]
       : (existing?.processed_invoice_ids ?? []),
-    ...(existing?.lead_id ? {} : stripNulls({ lead_id: invoice?.metadata?.lead_id ?? null })),
+    ...(existing?.lead_id ? {} : stripNulls({ lead_id: params.sub?.metadata?.lead_id ?? invoice?.metadata?.lead_id ?? null })),
   });
 
   return { row, duplicate: false, isRenewal, recovered };
@@ -276,8 +289,9 @@ function subscriptionIdOf(invoice: any, sub: any | null): string | null {
  * access was ever granted: the row stays `pending` with no grace deadline.
  * Repeated renewal failures preserve the ORIGINAL failure timestamp/deadline.
  */
-export async function applyInvoicePaymentFailed(params: {
+async function applyInvoicePaymentFailedOnce(params: {
   env: StripeEnv;
+  eventId?: string;
   invoice: any;
   sub: any | null;
 }): Promise<{ row: MemberSubscriptionRow | null; isInitialFailure: boolean }> {
@@ -285,6 +299,8 @@ export async function applyInvoicePaymentFailed(params: {
   if (!subscriptionId) return { row: null, isInitialFailure: true };
 
   const existing = await readRow(subscriptionId, params.env);
+  if (params.invoice?.id && existing?.processed_invoice_ids.includes(params.invoice.id)) return { row: existing, isInitialFailure: false };
+  if (existing?.last_invoice_paid_at && typeof params.invoice?.created === "number" && params.invoice.created * 1000 <= Date.parse(existing.last_invoice_paid_at)) return { row: existing, isInitialFailure: false };
   const facts = params.sub ? subscriptionFacts(params.sub) : null;
   const isInitialFailure =
     (existing?.paid_invoice_count ?? 0) === 0 || !existing?.student_enrolled_at;
@@ -292,6 +308,8 @@ export async function applyInvoicePaymentFailed(params: {
   if (isInitialFailure) {
     // Never grant access, never open a grace window for an unpaid enrollment.
     const row = await writeRow(subscriptionId, params.env, {
+    __version: existing?.row_version ?? null,
+    __event: params.eventId,
       ...(facts ? stripNulls(facts) : {}),
       first_payment_failed_at: existing?.first_payment_failed_at ?? new Date().toISOString(),
       grace_expires_at: null,
@@ -308,6 +326,8 @@ export async function applyInvoicePaymentFailed(params: {
   const expired = Date.now() > new Date(graceExpires).getTime();
 
   const row = await writeRow(subscriptionId, params.env, {
+    __version: existing?.row_version ?? null,
+    __event: params.eventId,
     ...(facts ? stripNulls(facts) : {}),
     first_payment_failed_at: failedAt,
     grace_expires_at: graceExpires,
@@ -319,6 +339,7 @@ export async function applyInvoicePaymentFailed(params: {
 /** 3DS / authentication required — same initial-vs-renewal distinction. */
 export async function applyInvoiceActionRequired(params: {
   env: StripeEnv;
+  eventId?: string;
   invoice: any;
   sub: any | null;
 }): Promise<{ row: MemberSubscriptionRow | null; isInitialFailure: boolean }> {
@@ -351,6 +372,7 @@ export function evaluateAccess(
  */
 export async function reconcileSubscriptionAccess(params: {
   env: StripeEnv;
+  eventId?: string;
   subscriptionId: string;
   row?: MemberSubscriptionRow | null;
 }): Promise<MemberSubscriptionRow | null> {
@@ -359,21 +381,13 @@ export async function reconcileSubscriptionAccess(params: {
   const { graceExpired } = evaluateAccess(row);
   if (!graceExpired) return row;
 
-  const db = await admin();
-  const nowIso = new Date().toISOString();
-  const { data, error } = await db
-    .from("member_subscriptions")
-    .update({ access_status: "suspended", updated_at: nowIso })
-    .eq("stripe_subscription_id", params.subscriptionId)
-    .eq("environment", params.env)
-    .eq("access_status", "past_due_grace")
-    .lte("grace_expires_at", nowIso)
-    .select("*")
-    .maybeSingle();
-  // Never synthesize a suspension the database did not accept.
-  if (error) throw new Error(`reconcileSubscriptionAccess failed: ${error.message}`);
-  // No row returned means a concurrent caller already suspended it; re-read.
-  return (data as MemberSubscriptionRow | null) ?? (await readRow(params.subscriptionId, params.env));
+  try {
+    return await writeRow(params.subscriptionId, params.env, { __version: row.row_version, access_status: "suspended" });
+  } catch (error) {
+    if (!(error instanceof StripeStateConflict)) throw error;
+    throw new Error("Stripe reconciliation changed concurrently; retry");
+  }
+
 }
 
 /** Batch reconciliation used by the daily scheduler route. */
@@ -397,18 +411,12 @@ export async function reconcileExpiredGracePeriods(env: StripeEnv): Promise<{
   );
   if (ids.length === 0) return { scanned: 0, suspended: 0, subscription_ids: [] };
 
-  const { data: updated, error: updateError } = await db
-    .from("member_subscriptions")
-    .update({ access_status: "suspended", updated_at: nowIso })
-    .eq("environment", env)
-    .eq("access_status", "past_due_grace")
-    .lte("grace_expires_at", nowIso)
-    .select("stripe_subscription_id");
-  if (updateError) throw new Error(`reconcile update failed: ${updateError.message}`);
+  const done: string[] = [];
+  for (const subscriptionId of ids) {
+    const row = await reconcileSubscriptionAccess({ env, subscriptionId });
+    if (row?.access_status === "suspended") done.push(subscriptionId);
+  }
 
-  const done = ((updated as { stripe_subscription_id: string }[] | null) ?? []).map(
-    (r) => r.stripe_subscription_id,
-  );
   return { scanned: ids.length, suspended: done.length, subscription_ids: done };
 }
 
@@ -424,14 +432,17 @@ export async function getReconciledRow(
 
 
 /** Refunds require explicit human review; access is never silently revoked. */
-export async function flagRefundReview(params: {
+async function flagRefundReviewOnce(params: {
   env: StripeEnv;
+  eventId?: string;
   subscriptionId: string | null;
 }): Promise<MemberSubscriptionRow | null> {
   if (!params.subscriptionId) return null;
   const existing = await readRow(params.subscriptionId, params.env);
   if (!existing) return null;
   return writeRow(params.subscriptionId, params.env, {
+    __version: existing?.row_version ?? null,
+    __event: params.eventId,
     metadata: { ...(existing.metadata ?? {}), refund_review_opened_at: new Date().toISOString() },
   });
 }
@@ -474,3 +485,10 @@ export function subscriptionContractFields(row: MemberSubscriptionRow | null) {
     certificate_months_remaining: Math.max(0, required - row.paid_active_months),
   };
 }
+
+export const associateCheckout = (params: Parameters<typeof associateCheckoutOnce>[0]) => retryStripeState(() => associateCheckoutOnce(params));
+export const syncSubscription = (params: Parameters<typeof syncSubscriptionOnce>[0]) => retryStripeState(() => syncSubscriptionOnce(params));
+export const applyInvoicePaid = (params: Parameters<typeof applyInvoicePaidOnce>[0]) => retryStripeState(() => applyInvoicePaidOnce(params));
+export const applyInvoicePaymentFailed = (params: Parameters<typeof applyInvoicePaymentFailedOnce>[0]) => retryStripeState(() => applyInvoicePaymentFailedOnce(params));
+
+export const flagRefundReview = (params: Parameters<typeof flagRefundReviewOnce>[0]) => retryStripeState(() => flagRefundReviewOnce(params));

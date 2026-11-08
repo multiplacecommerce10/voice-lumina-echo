@@ -469,7 +469,7 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
                 if (issues.some((i) => i.level === "error")) {
                   console.error(
                     "[stripe-webhook] confirmation email audit failed",
-                    JSON.stringify({ issues, draft }),
+                    JSON.stringify({ issueCount: issues.length }),
                   );
                 } else {
                   confirmationEmail = draft;
@@ -478,23 +478,7 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
 
               // Existing passwords remain untouched; new students choose their
               // own password through a secure link, never an emailed password.
-              let credentialsEmail: Awaited<ReturnType<typeof import("@/lib/stripe-account-access.server").prepareStripeAccountAccess>> | null = null;
-              const credentialsTo = f.customer_email ?? leadEmail;
-              if (
-                lifecycle.fulfillment_ready &&
-                lifecycle.payment_lifecycle_status !== "paid_renewal" &&
-                credentialsTo
-              ) {
-                try {
-                  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-                  const { prepareStripeAccountAccess } = await import("@/lib/stripe-account-access.server");
-                  credentialsEmail = await prepareStripeAccountAccess(supabaseAdmin.auth.admin, {
-                    email: credentialsTo, fullName: leadFullName, eventId: event.id,
-                  });
-                } catch (e) {
-                  console.error("[stripe-webhook] credentials account/email build failed:", e);
-                }
-              }
+              // Account preparation and delivery are deferred to the durable Stripe outbox.
 
               // Ordered email sequence the enrollment automation must send,
               // both from subscription@consciousvoice.tecendosom.com.
@@ -513,19 +497,7 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
                       },
                     ]
                   : []),
-                ...(credentialsEmail
-                  ? [
-                      {
-                        order: 2,
-                        key: "member_credentials",
-                        subject: credentialsEmail.subject,
-                        body_html: credentialsEmail.bodyHtml,
-                        body_text: credentialsEmail.bodyText,
-                        sender_email: EMAIL_SENDERS.payment_confirmed,
-                        sender_name: EMAIL_SENDERS.name,
-                      },
-                    ]
-                  : []),
+
               ];
               const emailSequenceInstruction =
                 "Both emails are sent directly by this application via Hostinger Agentic Mail FROM subscription@consciousvoice.tecendosom.com. This sequence is kept for audit/debug only — no downstream automation sends email.";
@@ -557,9 +529,9 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
                 sender_instruction: senderInstruction("payment_confirmed"),
                 email_sequence: emailSequence,
                 email_sequence_instruction: emailSequenceInstruction,
-                credentials_email_subject: credentialsEmail?.subject ?? null,
-                credentials_email_body_text: credentialsEmail?.bodyText ?? null,
-                credentials_email_body_html: credentialsEmail?.bodyHtml ?? null,
+                credentials_email_subject: null,
+                credentials_email_body_text: null,
+                credentials_email_body_html: null,
                 lead_id: leadId,
                 resume_code: leadResumeCode,
 
@@ -616,9 +588,9 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
                   sender_instruction: senderInstruction("payment_confirmed"),
                   email_sequence: emailSequence,
                   email_sequence_instruction: emailSequenceInstruction,
-                  credentials_email_subject: credentialsEmail?.subject ?? null,
-                  credentials_email_body_text: credentialsEmail?.bodyText ?? null,
-                  credentials_email_body_html: credentialsEmail?.bodyHtml ?? null,
+                  credentials_email_subject: null,
+                  credentials_email_body_text: null,
+                  credentials_email_body_html: null,
                   email_greeting_instruction:
                     "Send the email using the HTML version in email_body_html. If the email provider cannot send HTML, fall back to the plain text in email_body_text. Use the subject exactly as email_subject. Do not rewrite, do not invent a course name, and never wrap the first name in parentheses, brackets or placeholder markers. The course is always called 'The Power of Conscious Voice — Tecendo Som'.",
                   confirmation_plan_text: confirmationEmail?.planText ?? null,
@@ -703,35 +675,8 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
               // — when the flag is unset/false we never even import it.
               const makeEnabled = isMakeForwardingEnabled();
               const jobs: Promise<unknown>[] = [];
-              // Welcome + credentials emails from the Hostinger subscription@
-              // mailbox (only after confirmed payment).
-              const welcomeTo = f.customer_email ?? leadEmail;
-              if (confirmationEmail && welcomeTo) {
-                const { sendHostingerMail } = await import("@/lib/hostinger-mail.server");
-                jobs.push(
-                  sendHostingerMail("subscription", {
-                    to: welcomeTo,
-                    subject: confirmationEmail.subject,
-                    html: confirmationEmail.bodyHtml,
-                    text: confirmationEmail.bodyText,
-                  }).then((r) => {
-                    if (!r.ok) console.error("[stripe-webhook] hostinger welcome failed:", r.status, r.message);
-                  }),
-                );
-              }
-              if (credentialsEmail && credentialsTo) {
-                const { sendHostingerMail } = await import("@/lib/hostinger-mail.server");
-                jobs.push(
-                  sendHostingerMail("subscription", {
-                    to: credentialsTo,
-                    subject: credentialsEmail.subject,
-                    html: credentialsEmail.bodyHtml,
-                    text: credentialsEmail.bodyText,
-                  }).then((r) => {
-                    if (!r.ok) console.error("[stripe-webhook] hostinger credentials failed:", r.status, r.message);
-                  }),
-                );
-              }
+              // Stripe notifications were queued in the same transaction as paid access.
+              // Never create accounts or send mail inline; retries are handled by the outbox.
               if (makeEnabled) {
                 const { forwardToMake } = await import("@/lib/make.server");
                 jobs.push(forwardToMake(forwardPayload));

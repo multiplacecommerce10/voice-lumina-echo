@@ -1077,6 +1077,39 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_checkout_attempts: {
+        Row: {
+          closed_at: string | null
+          consent_hash: string
+          created_at: string
+          environment: string
+          id: string
+          lead_id: string
+          price_key: string
+          session_id: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          consent_hash: string
+          created_at?: string
+          environment: string
+          id?: string
+          lead_id: string
+          price_key: string
+          session_id?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          consent_hash?: string
+          created_at?: string
+          environment?: string
+          id?: string
+          lead_id?: string
+          price_key?: string
+          session_id?: string | null
+        }
+        Relationships: []
+      }
       stripe_webhook_events: {
         Row: {
           amount_total: number | null
@@ -1330,6 +1363,24 @@ export type Database = {
         Args: { p_id: string; p_invite: string }
         Returns: boolean
       }
+      cas_stripe_member: {
+        Args: {
+          p_env: string
+          p_patch: Json
+          p_subscription: string
+          p_version: number
+        }
+        Returns: Json
+      }
+      cas_stripe_member_base: {
+        Args: {
+          p_env: string
+          p_patch: Json
+          p_subscription: string
+          p_version: number
+        }
+        Returns: Json
+      }
       claim_diagnostic_capture: {
         Args: { p_id: string; p_invite: string }
         Returns: {
@@ -1431,6 +1482,15 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      reserve_stripe_checkout: {
+        Args: {
+          p_consent: string
+          p_env: string
+          p_lead: string
+          p_price: string
+        }
+        Returns: Json
       }
       save_private_diagnostic_form: {
         Args: { p_answers: Json; p_hash: string; p_version: string }

@@ -190,6 +190,27 @@
       "when": 1794164639136,
       "tag": "0026_enrollment_retry_json_comparison",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1794164940843,
+      "tag": "0027_stripe_atomic_state_and_outbox",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1794165038423,
+      "tag": "0028_stripe_checkout_persisted_attempt",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1794165098726,
+      "tag": "0029_stripe_event_dedupe_transaction",
+      "breakpoints": true
     }
   ]
 }

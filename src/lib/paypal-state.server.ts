@@ -246,10 +246,11 @@ async function findAuthUser(email: string) {
 /** Delivers ONE live outbox row. Throws on failure (row is retried). Never sets or emails passwords. */
 async function deliverPayPal(row: OutboxRow): Promise<void> {
   const env = row.environment as PayPalEnv;
-  const loaded = await supabasePayPalRepo(env).load(row.subscription_id);
+  const stripeSnapshot = row.provider === "stripe" ? row.payload?.state : null;
+  const loaded = stripeSnapshot ? { state: stripeSnapshot as any } : await supabasePayPalRepo(env).load(row.subscription_id);
   if (!loaded) throw new Error("subscription row missing");
   const s = loaded.state;
-  const to = (s.email ?? row.recipient ?? "").toLowerCase();
+  const to = (row.provider === "stripe" ? row.recipient ?? "" : s.email ?? row.recipient ?? "").toLowerCase();
   if (!to) throw new Error("no recipient");
   const { sendHostingerMail } = await import("@/lib/hostinger-mail.server");
   let draft: { subject: string; bodyHtml: string; bodyText: string };
@@ -260,7 +261,7 @@ async function deliverPayPal(row: OutboxRow): Promise<void> {
     const { COURSE_START_UTC, formatClassInTimeZone, getNextClassAfter } = await import("@/lib/course-schedule");
     const { SUBSCRIPTION_CATALOG } = await import("@/lib/subscription-catalog");
     const months = (s.duration_months ?? 1) as 1 | 3 | 6;
-    const entry = s.tier ? SUBSCRIPTION_CATALOG[s.tier][months] : null;
+    const entry = s.tier ? SUBSCRIPTION_CATALOG[s.tier as "live" | "complete"][months] : null;
     const fmt = (n: number) => `US$ ${n.toFixed(2)}`;
     const fmtDate = (iso: string | null) =>
       iso ? new Date(iso).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" }) : null;
@@ -280,6 +281,10 @@ async function deliverPayPal(row: OutboxRow): Promise<void> {
       nextClassFormatted: formatClassInTimeZone(getNextClassAfter(new Date()), "UTC").full,
       membershipUrl: EMAIL_BRAND.membershipUrl,
     });
+  } else if (row.kind === "account_access" && row.provider === "stripe") {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { prepareStripeAccountAccess } = await import("@/lib/stripe-account-access.server");
+    draft = await prepareStripeAccountAccess(supabaseAdmin.auth.admin, { email: to, fullName: (row.payload?.fullName as string | null) ?? s.full_name, eventId: row.dedupe_key });
   } else if (row.kind === "account_access") {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { buildPayPalAccountAccessEmail } = await import("@/lib/paypal-emails");

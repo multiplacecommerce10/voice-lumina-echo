@@ -1,5 +1,11 @@
 # Roadmap — Email notifications (Taskade unified flow)
 
+## Current request — Stripe atomic fulfillment follow-up
+- [x] Atomic versioned Stripe state/event updates and durable deduplicated queue; parallel mocks and hosted rollback stale-version fixture passed (hosted parallel transaction test not executed).
+- [x] Persisted checkout attempt idempotency/reuse/provider-confirmed expiration and resume zero-row CAS guard. Unknown creates older than 23h require operator reconciliation.
+- [ ] PayPal known-order/payee GET and additive capture events BLOCKED: no accessible paypal gateway connection; existing direct credentials retained, not replaced. Owner setup link recorded in report; invitations unchanged.
+- [ ] Sanitized report/audit backup, tests and authorized publication verification.
+
 ## Current request — New course dates
 - [x] Start December 7, 2026; weekly Mondays 09:30–11:00 São Paulo; applications through January 3, 2027 inclusive, joining the ongoing cohort only after human review. Update shared schedule, pages and emails; verify tests.
 
@@ -8,7 +14,8 @@
 - [x] Remove first-three-applications promises; verify scholarship storage/receipt retry and no admission grant.
 - [x] Mock/rollback checks, report and local browser date verification complete.
 - [ ] BLOCKED: empty Enrollment intents tab creation was cancelled; optional Sheets projection will retry, authoritative enrollment unaffected.
-- [ ] Publish/verify current revision and refresh audit backup; PayPal invitation still blocked by missing connection/capture event and unverified merchant/BRL capability.
+- [x] Audit backup 8f4e5611d2f383c50c938e8a8d6814867e4a5bc3 verified 61 full files; GitHub main unchanged.
+- [ ] BLOCKED: publication requested, but domain HTTP200 still lacks December7/January3 dates. PayPal invitation blocked by missing connection/capture event and unverified merchant/BRL capability.
 
 ## Current request — Official enrollment / Scholarship audit and private PayPal BRL2
 - [x] Audit validation, storage, privileges, billing, admission/access and notifications; bounded fixes/tests complete; remaining race/mail/ownership limitations documented in docs/enrollment-scholarship-paypal-audit-2026-11-08.md.

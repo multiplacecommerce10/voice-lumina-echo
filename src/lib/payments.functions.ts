@@ -169,7 +169,11 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
               : "direct";
           })();
 
-      const session = await stripe.checkout.sessions.create({
+      const { reserveStripeAttempt } = await import("@/lib/stripe-checkout-attempt.server");
+      const { attempt, session: storedSession } = await reserveStripeAttempt(supabaseAdmin, stripe, { leadId: data.leadId, environment: data.environment, priceId: data.priceId, consent: {
+        termsVersion: data.consent?.termsVersion, privacyVersion: data.consent?.privacyVersion, refundVersion: data.consent?.refundVersion, acceptedAt: data.consent?.acceptedAt, immediateAccessAt: data.consent?.immediateAccessAt,
+      } });
+      const session = storedSession ?? await stripe.checkout.sessions.create({
         line_items: [{ price: stripePrice.id, quantity: 1 }],
         // Recurring subscription: the full selected period is charged
         // immediately (no trial) and renews automatically for the same period.
@@ -188,8 +192,9 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
         },
         metadata,
         customer_email: customerEmail,
-      } as any);
-
+      } as any, { idempotencyKey: `enrollment:${attempt.id}` });
+      const { error: bindError } = await supabaseAdmin.from("stripe_checkout_attempts").update({ session_id: session.id }).eq("id", attempt.id);
+      if (bindError) throw new Error("Checkout saved by Stripe but local confirmation needs retry; please retry this same enrollment.");
 
       // Link the Stripe session back to our lead row so the webhook can
       // join cleanly and mark status transitions.

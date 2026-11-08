@@ -1,5 +1,46 @@
 # Roadmap — Email notifications (Taskade unified flow)
 
+## Current request — Official enrollment / Scholarship audit and private PayPal BRL2
+- [x] Audit validation, storage, privileges, billing, admission/access and notifications; bounded fixes/tests complete; remaining race/mail/ownership limitations documented in docs/enrollment-scholarship-paypal-audit-2026-11-08.md.
+- [x] Add an immutable PayPal-only BRL200 offer without changing old invitations or normal USD prices.
+- [ ] Verify mocks/rollback fixtures and published private copy; save sanitized report and hash-verified audit backup with main unchanged.
+- [ ] BLOCKED: PayPal connection absent, capture-completed event not registered, merchant identity read401/BRL capability unverified. No new invitation; all existing invitations/courtesies preserved.
+
+## Current request — PayPal approval notice
+- [x] Verified admission preflight and awaiting-review notice instead of an unusable PayPal button; server approval requirement and Stripe parity retained.
+- [x] Handler checks (14 tests) and isolated browser mock notice passed; no PayPal SDK, payment or persisted writes. Monitoring finding resolved with commit; publication not requested for this change.
+
+## Current request — Separate private BRL diagnostic
+- [x] Bind whitelisted invitation/attempt currency server-side; isolated exact Stripe BRL catalog created in sandbox, USD/PayPal unchanged.
+- [x] Update private copy and confirmation currency without changing courtesy, consent, profile or outbox rules.
+- [x] Run 61 diagnostic/form tests, 10 checkout handler tests, catalog checks and 195 PayPal lifecycle checks; hosted rollback and 320/390px/desktop browser fixtures pass. No real payment objects or delivery.
+- [x] Commit ee53714; audit f7381f25e0448f53531b7d381defd6d84b37606d verified 18 full hashes and preserved main 38eb31edd51f17e29e2d895bc3e3158b3414fa7f. Publication requested twice.
+- [ ] Confirm BRL marker/copy and live catalog before one fresh 48-hour invitation — blocked: custom domain still serves the prior revision and live lookup key remains absent after publication requests. No invitation created or revoked.
+
+## Current request — Concise private offer
+- [x] Simplify only the private offer and diagnostic consent wording, retaining branding and all existing payment/storage rules; existing consent version remains valid because scope is unchanged.
+- [x] Verify 51 existing tests and 320/390px/desktop with fictitious invitation data only; automatic compilation OK, storage and payment gates retained.
+- [x] Save three changed source files plus verification document to audit branch fc203da04d0c485b7ddfc13bb2bcdec85b203aa0 with complete hash readback; main remains 38eb31edd51f17e29e2d895bc3e3158b3414fa7f.
+- [x] Confirm concise-v1 on custom domain: final HTTP 200/browser read exposes the marker; published card visually verified with fictitious invitation response only. No real invitation, profile save or payment used.
+
+## Current request — English private card title
+- [x] Show "Special Guest — US$ 1" on the private page via a display-only label; provider objects and exact Stripe product-name validation keep the original DIAGNOSTIC_LABEL.
+- [x] Typecheck and automatic build OK; no new tests needed, no invitations/payments/emails touched.
+- [x] Save both files to audit branch 307d11db15efc7acd3bfedb3c233748882507cde with blob-hash readback (02e4ddaf, 70825c83); main remains 38eb31edd51f17e29e2d895bc3e3158b3414fa7f.
+- [x] Publish and confirm on custom domain: invited page renders "Special Guest — US$ 1", no Portuguese title remains.
+
+## Current request — Accessible birth date only
+- [x] Replace native date input with accessible Day/Month/Year selectors preserving ISO restoration and validation.
+- [x] Verify synthetic dates, keyboard/error focus and 320/390px/desktop; 51 mock tests pass and automatic build OK.
+- [x] Save six files to audit branch 26c5c83697e33cc1f93163c5970e7dcb3eb1b659 with SHA-256 readback; main remains 38eb31edd51f17e29e2d895bc3e3158b3414fa7f; publication requested.
+- [ ] Confirm selects-v1 custom-domain marker — initial post-publication read is HTTP 200 but still lacks the marker; no invitation or checkout used.
+
+## Current request — Private tester saved answers
+- [x] Atomically save complete validated private answers with explicit consent before checkout; service-only access and immutable recipient.
+- [x] Correct consent copy and isolate state when the invitation changes; distinguish unavailable from invalid invitations.
+- [x] Run 44 safety/regression tests and rolled-back DB fixtures; verify 15 audit-branch file hashes with main unchanged; request publication without financial actions.
+- [x] Confirm v4 custom-domain marker — November 7 DOB verification read shows private-guest-complete7d-saved-form-v4-20261107 without opening an invitation.
+
 ## Current request — Private post-form payer test
 - [x] Final Stripe review: use existing integration identifier helper in diagnosticStart; regression reproduced missing identifier, then 14 handler mocks/103 assertions and 11 webhook mocks/77 assertions passed, compilation OK.
 - [x] Save final identifier revision to existing backup branch 70f3912, four blobs verified, main preserved; publish requested without financial objects or invitation use.
@@ -47,7 +88,7 @@
 ## Current request — Missing abandoned-cart test
 - [x] Confirm the recent test was marked abandoned and recovery delivery was accepted; no repeat sends or status changes.
 - [x] Fix the admin pending-enrollment query to include checkout leads whose source is NULL.
-- [x] Query regression test passes; existing Synthetic fixture test is visible as abandoned in the signed-in admin page; automatic build OK.
+- [x] Query regression test passes; existing Maria Luiza Correa test is visible as abandoned in the signed-in admin page; automatic build OK.
 - [ ] Publish this panel correction — requires explicit owner approval.
 
 ## Current request — Preview failure investigation
@@ -57,12 +98,12 @@
 - [x] Verify the preview after the configuration update: automatic build OK at 00:55:17 UTC, authenticated lesson and flashcard navigation pass with no HTTP/runtime errors or mid-request dependency reload.
 
 ## Current request — Course and scholarship login branding
-- [x] Confirm Synthetic fixture's existing Complete courtesy membership through November 13 and stored structure: six modules, eleven lessons, thirteen materials.
+- [x] Confirm Tayyab's existing Complete courtesy membership through November 13 and stored structure: six modules, eleven lessons, thirteen materials.
 - [x] Give the course login its own course branding; reserve scholarship branding for the post-selection flow.
 - [x] Verify both login banners, password visibility, signed-out course redirect and successful build; no permission changes or publishing.
-- [x] Verify the course signed in as Synthetic fixture — six modules, eleven lesson cards and the Module 2 video placeholder rendered; existing credentials remain unchanged.
+- [x] Verify the course signed in as Tayyab — six modules, eleven lesson cards and the Module 2 video placeholder rendered; existing credentials remain unchanged.
 - [x] Request authorized publication of the normal course login and catalog; basic security checks found no issues (deep code analysis not run).
-- [x] Send Synthetic fixture one corrected direct course link via Hostinger (204), preserving his password and explaining the pending publication; no other emails resent.
+- [x] Send Tayyab one corrected direct course link via Hostinger (204), preserving his password and explaining the pending publication; no other emails resent.
 - [ ] Confirm the official catalog after deployment completes — latest post-request check still returned 404; publication completion is outside this turn's control.
 
 ## Current request — Further voice scholarship (October 13, second batch)
@@ -99,12 +140,12 @@
 
 Two distinct emails, branched by Taskade on `payment_status` / `enrollment_status`:
 
-- [x] **Recovery email** (lead não finalizou) — `unpaid` / `incomplete` — enviado e validado (Synthetic fixture, tentativa 7, HTTP 200)
+- [x] **Recovery email** (lead não finalizou) — `unpaid` / `incomplete` — enviado e validado (Tayyab, tentativa 7, HTTP 200)
 - [ ] **Confirmation email** (aluno inscrito/pago) — `paid` / `completed` — testar ramo pago no Taskade
   - [ ] Preview/proofread do email de confirmação (/debug/confirmation-email)
   - [ ] Teste do ramo pago no Taskade (payload `paid`/`completed`)
   - [ ] Checkout sandbox completo end-to-end
-  - [x] Teste do ramo pago no Taskade — Synthetic fixture Azeem (Lahore/PK), Complete 6 meses, HTTP 200
+  - [x] Teste do ramo pago no Taskade — Tayyab Azeem (Lahore/PK), Complete 6 meses, HTTP 200
 
 - [ ] Publicar site e testar chat publicado
 - [ ] GitHub: sincronização sem histórico pesado (depende do menu + > GitHub, ação da usuária)
@@ -116,7 +157,7 @@ Two distinct emails, branched by Taskade on `payment_status` / `enrollment_statu
 - [ ] #3 Email: confirmações e lembretes via Taskade
 - [ ] #1 Teste E2E (bloqueado por #7, #2, #3)
 
-- [x] Teste único matrícula+credenciais para redacted@example.com (autorizado por Priscila)
+- [x] Teste único matrícula+credenciais para contato@multiplacecommerce.com (autorizado por Priscila)
 
 - [x] Module 1 renamed: Foundations of Vocal Technique & Proprioception
 - [x] Module 2 lesson with video placeholder + 52 NotebookLM flashcards

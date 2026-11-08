@@ -35,6 +35,14 @@ async function handle(request: Request, envParam: string): Promise<Response> {
 
   const { normalizePayPalEvent, applyPayPalEvent, PAYPAL_HANDLED_EVENTS } = await import("@/lib/paypal-lifecycle");
   const payload = JSON.parse(raw);
+  if (typeof payload.resource?.custom_id === "string" && /^(conscious_voice_usd1_v1|conscious_voice_paypal_brl2_v1):/.test(payload.resource.custom_id)) {
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { applyPrivatePayPalDiagnostic } = await import("@/lib/private-diagnostic.server");
+      await applyPrivatePayPalDiagnostic(supabaseAdmin, payload, env);
+      return Response.json({ ok: true, diagnostic: true });
+    } catch { return new Response("Diagnostic verification unavailable", { status: 500 }); }
+  }
   const normalized = normalizePayPalEvent(payload);
   if (!normalized) return new Response("Bad event", { status: 400 });
   if (!(PAYPAL_HANDLED_EVENTS as readonly string[]).includes(normalized.eventType) || !normalized.subscriptionId) {

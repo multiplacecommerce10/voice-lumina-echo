@@ -1,6 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { profileSchema, profileAnswers, profileFromAnswers, type EnrollmentProfile } from "@/lib/enrollment-profile";
+import { getRequest } from "@tanstack/react-start/server";
+import { assertDiagnosticOrigin } from "./private-diagnostic-rules";
+import { LEGAL_VERSIONS } from "./legal";
+import { consentIsCurrent } from "./paypal-admission";
+
+function checkOrigin() { const request = getRequest(); assertDiagnosticOrigin(request.headers.get("origin"), new URL(request.url).origin, request.headers.get("sec-fetch-site")); }
 
 const captureLeadSchema = z.object({
   profile: profileSchema,
@@ -39,6 +45,8 @@ const captureLeadSchema = z.object({
 export const captureLead = createServerFn({ method: "POST" })
   .validator((input: unknown) => captureLeadSchema.parse(input))
   .handler(async ({ data }): Promise<{ leadId: string; resumeCode: string } | { error: string }> => {
+    checkOrigin();
+    if (!data.consent || !consentIsCurrent(data.consent as any, LEGAL_VERSIONS, Date.now()) || !data.consent.immediateAccessAt || !Number.isFinite(Date.parse(data.consent.immediateAccessAt))) return { error: "Please accept the current terms, privacy notice and access statement before continuing." };
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { newResumeCode } = await import("@/lib/resume-code.server");
@@ -52,8 +60,9 @@ export const captureLead = createServerFn({ method: "POST" })
         answers: { ...profileAnswers(data.profile), legal_consent: data.consent },
       };
       if (data.resumeCode) {
-        const { data: existing } = await supabaseAdmin.from("leads").select("id, status, answers, resume_code").eq("resume_code", data.resumeCode).maybeSingle();
+        const { data: existing } = await supabaseAdmin.from("leads").select("id, status, answers, resume_code, email").eq("resume_code", data.resumeCode).maybeSingle();
         if (!existing || !["captured", "checkout_started", "abandoned"].includes(existing.status ?? "")) return { error: "This enrollment can no longer be resumed." };
+        if (existing.email?.toLowerCase() !== data.email.toLowerCase()) return { error: "This enrollment link belongs to a different email address." };
         const oldAnswers = z.record(z.string(), z.unknown()).safeParse(existing.answers);
         const { error: updateError } = await supabaseAdmin.from("leads").update({ ...values, answers: { ...(oldAnswers.success ? oldAnswers.data : {}), ...values.answers } }).eq("id", existing.id).in("status", ["captured", "checkout_started", "abandoned"]);
         if (updateError) return { error: "Could not save your details. Please try again." };
@@ -115,6 +124,7 @@ export const resumeLead = createServerFn({ method: "POST" })
         }
       | { error: string }
     > => {
+      checkOrigin();
       try {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { data: row, error } = await supabaseAdmin

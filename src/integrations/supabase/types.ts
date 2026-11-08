@@ -259,6 +259,7 @@ export type Database = {
           recovery_email_sent_at: string | null
           referrer: string | null
           resume_code: string | null
+          scholarship_request_id: string | null
           scholarship_result_token: string | null
           source: string | null
           status: string
@@ -292,6 +293,7 @@ export type Database = {
           recovery_email_sent_at?: string | null
           referrer?: string | null
           resume_code?: string | null
+          scholarship_request_id?: string | null
           scholarship_result_token?: string | null
           source?: string | null
           status?: string
@@ -325,6 +327,7 @@ export type Database = {
           recovery_email_sent_at?: string | null
           referrer?: string | null
           resume_code?: string | null
+          scholarship_request_id?: string | null
           scholarship_result_token?: string | null
           source?: string | null
           status?: string
@@ -657,6 +660,7 @@ export type Database = {
           invite_id: string
           paid_at: string | null
           payee_id: string | null
+          paypal_only: boolean
           profile_validated_at: string
           provider: string
           provider_id: string | null
@@ -677,6 +681,7 @@ export type Database = {
           invite_id: string
           paid_at?: string | null
           payee_id?: string | null
+          paypal_only?: boolean
           profile_validated_at?: string
           provider: string
           provider_id?: string | null
@@ -697,6 +702,7 @@ export type Database = {
           invite_id?: string
           paid_at?: string | null
           payee_id?: string | null
+          paypal_only?: boolean
           profile_validated_at?: string
           provider?: string
           provider_id?: string | null
@@ -803,6 +809,7 @@ export type Database = {
           currency: string
           expires_at: string
           id: string
+          paypal_only: boolean
           revoked_at: string | null
           stripe_only: boolean
           token_hash: string
@@ -813,6 +820,7 @@ export type Database = {
           currency?: string
           expires_at: string
           id?: string
+          paypal_only?: boolean
           revoked_at?: string | null
           stripe_only?: boolean
           token_hash: string
@@ -823,6 +831,7 @@ export type Database = {
           currency?: string
           expires_at?: string
           id?: string
+          paypal_only?: boolean
           revoked_at?: string | null
           stripe_only?: boolean
           token_hash?: string
@@ -1330,6 +1339,7 @@ export type Database = {
           invite_id: string
           paid_at: string | null
           payee_id: string | null
+          paypal_only: boolean
           profile_validated_at: string
           provider: string
           provider_id: string | null
@@ -1359,6 +1369,7 @@ export type Database = {
           invite_id: string
           paid_at: string | null
           payee_id: string | null
+          paypal_only: boolean
           profile_validated_at: string
           provider: string
           provider_id: string | null
@@ -1377,6 +1388,10 @@ export type Database = {
       has_active_membership: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       pending_diagnostic_grants: { Args: never; Returns: string[] }
+      record_scholarship_application: {
+        Args: { p_data: Json; p_privacy_version: string; p_request: string }
+        Returns: string
+      }
       reserve_payment_diagnostic: {
         Args: { p_hash: string; p_provider: string }
         Returns: {
@@ -1392,6 +1407,7 @@ export type Database = {
           invite_id: string
           paid_at: string | null
           payee_id: string | null
+          paypal_only: boolean
           profile_validated_at: string
           provider: string
           provider_id: string | null

@@ -165,16 +165,18 @@ export const createScholarshipResultLink = createServerFn({ method: "POST" })
 
       for (let attempt = 0; attempt < 3; attempt += 1) {
         const token = generateResultToken();
-        const { error: updateError } = await context.supabase
+        const { data: tokenRows, error: updateError } = await context.supabase
           .from("leads")
           .update({ scholarship_result_token: token })
           .eq("id", data.leadId)
           .eq("source", "scholarship_application")
-          .is("scholarship_result_token", null);
+          .is("scholarship_result_token", null).select("scholarship_result_token");
+        if (!updateError && tokenRows?.length === 1) return { token: tokenRows[0].scholarship_result_token as string };
         if (!updateError) {
-          return { token };
+          const { data: winner, error: readError } = await context.supabase.from("leads").select("scholarship_result_token").eq("id", data.leadId).eq("source", "scholarship_application").maybeSingle();
+          if (!readError && winner?.scholarship_result_token) return { token: winner.scholarship_result_token };
         }
-        console.error("[createScholarshipResultLink] update failed:", updateError.message);
+        if (updateError) console.error("[createScholarshipResultLink] update failed:", updateError.code);
       }
       return { error: "Could not create the result link. Please try again." };
     } catch (e) {

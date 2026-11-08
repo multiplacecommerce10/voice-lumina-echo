@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { submitScholarshipApplication } from "@/lib/scholarship.functions";
+import { Button } from "./ui/button";
+import { Link } from "@tanstack/react-router";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -12,9 +14,12 @@ export function ScholarshipForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [freeSeat, setFreeSeat] = useState(false);
+  const requestId = useRef<string | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (status === "submitting") return;
+    requestId.current ??= crypto.randomUUID();
     setStatus("submitting");
     setErrorMsg("");
     const form = e.currentTarget;
@@ -23,6 +28,8 @@ export function ScholarshipForm() {
     try {
       result = await submit({
         data: {
+          requestId: requestId.current,
+          privacyConsent: (fd.get("privacyConsent") === "on") as true,
           fullName: String(fd.get("fullName") || ""),
           email: String(fd.get("email") || ""),
           phone: String(fd.get("phone") || ""),
@@ -36,7 +43,6 @@ export function ScholarshipForm() {
         },
       });
     } catch (err) {
-      console.error("[ScholarshipForm] submit failed:", err);
       setStatus("error");
       setErrorMsg(
         "We couldn't send your application. Please check your answers and connection, then try again.",
@@ -160,14 +166,14 @@ export function ScholarshipForm() {
       </div>
 
       {status === "error" && <p className="text-sm text-destructive">{errorMsg}</p>}
-
-      <button
+      <label className="flex items-start gap-3 text-sm"><input type="checkbox" name="privacyConsent" required /><span>I agree to the storage of my application details for pedagogical review and acknowledge the <Link to="/privacy-policy" target="_blank" className="underline">Privacy Policy</Link>.</span></label>
+      <Button
         type="submit"
         disabled={status === "submitting"}
         className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-primary text-primary-foreground font-semibold disabled:opacity-60"
       >
         {status === "submitting" ? "Sending…" : "Submit application →"}
-      </button>
+      </Button>
       <p className="text-xs text-muted-foreground">
         Submitting an application does not guarantee a seat. Every application is reviewed with care
         by Cuca Medina.

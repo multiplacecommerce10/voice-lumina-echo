@@ -181,7 +181,7 @@ export function supabaseOutboxStore(): OutboxStore {
       const nowIso = new Date(now).toISOString();
       const { data, error } = await d
         .from("notification_outbox")
-        .select("id, dedupe_key, environment, provider, kind, subscription_id, recipient, attempts, locked_until")
+        .select("id, dedupe_key, environment, provider, kind, subscription_id, recipient, attempts, locked_until, payload")
         .in("status", ["pending", "failed"])
         .lte("next_attempt_at", nowIso)
         .order("created_at")
@@ -332,6 +332,15 @@ export async function runOutbox(now = () => Date.now()) {
   return processOutbox({
     store: supabaseOutboxStore(),
     deliver: async (row) => {
+      if (row.provider === "scholarship" && row.kind === "scholarship_received") {
+        if (!row.recipient || typeof row.payload?.fullName !== "string") throw new Error("Scholarship receipt binding missing");
+        const { buildScholarshipApplicationEmail } = await import("./scholarship-email");
+        const { sendHostingerMail } = await import("./hostinger-mail.server");
+        const mail = buildScholarshipApplicationEmail(row.payload.fullName);
+        const sent = await sendHostingerMail("scholarship", { to: row.recipient, subject: mail.subject, html: mail.bodyHtml, text: mail.bodyText });
+        if (!sent.ok) throw new Error(`Scholarship receipt delivery failed: HTTP ${sent.status}`);
+        return;
+      }
       if (row.provider === "courtesy") {
         const { deliverCourtesy } = await import("@/lib/private-diagnostic-grant.server");
         return deliverCourtesy(row);

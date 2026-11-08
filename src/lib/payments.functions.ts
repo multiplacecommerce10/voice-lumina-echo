@@ -13,6 +13,7 @@ import {
 } from "@/lib/subscription-catalog";
 import type { MemberSubscriptionRow } from "@/lib/subscription-state.server";
 import { validateStripeCatalogPrice, validateCheckoutAdmission } from "@/lib/checkout-validation";
+import { assertStoredEnrollment } from "@/lib/enrollment-safety";
 
 import {
   HISTORICAL_PRICE_KEYS,
@@ -67,9 +68,11 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       if (!data.leadId) throw new Error("Please complete your enrollment details first.");
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: lead, error: leadError } = await supabaseAdmin.from("leads")
-        .select("id, email, admission_status").eq("id", data.leadId).maybeSingle();
+        .select("id, email, full_name, phone, answers, admission_status").eq("id", data.leadId).maybeSingle();
       if (leadError) throw new Error("Could not verify enrollment approval. Checkout was blocked.");
       const customerEmail = validateCheckoutAdmission(lead, data.consent, Date.now());
+      if (!lead) throw new Error("Please complete your enrollment details first.");
+      assertStoredEnrollment(lead, data.consent);
       const stripe = createStripeClient(data.environment);
 
       const prices = await stripe.prices.list({ lookup_keys: [data.priceId], limit: 1 });

@@ -8,6 +8,9 @@
 import type { StripeEnv } from "@/lib/stripe.server";
 import { createStripeClient } from "@/lib/stripe.server";
 import type { LifecycleContext } from "@/lib/payment-lifecycle";
+import { validateOfficialInvoice } from "./stripe-invoice-validation";
+import { admissionAllowsCheckout } from "./paypal-admission";
+import { profileSchema, profileFromAnswers } from "./enrollment-profile";
 import {
   applyInvoiceActionRequired,
   applyInvoicePaid,
@@ -103,6 +106,16 @@ export async function processSubscriptionEvent(params: {
       const subscriptionId = subIdFrom(obj);
       if (!subscriptionId) return empty;
       const before = await retrieveSub(env, subscriptionId, true);
+      const currentOffer = validateOfficialInvoice(obj, before, env);
+      if (currentOffer) {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const leadId = before?.metadata?.lead_id;
+        if (!leadId) throw new Error("Course invoice enrollment binding missing");
+        const { data: lead, error } = await supabaseAdmin.from("leads").select("full_name,email,phone,answers,admission_status").eq("id", leadId).maybeSingle();
+        const consent = (lead?.answers as any)?.legal_consent;
+        const meta = before.metadata;
+        if (error || !lead || !admissionAllowsCheckout(lead.admission_status) || !profileSchema.safeParse(profileFromAnswers({ fullName: lead.full_name, email: lead.email, phone: lead.phone }, lead.answers)).success || !consent || !Number.isFinite(Date.parse(consent.acceptedAt)) || ["termsVersion", "privacyVersion", "refundVersion", "acceptedAt", "immediateAccessAt"].some((key, index) => consent[key] !== meta[["terms_version", "privacy_version", "refund_version", "legal_accepted_at", "immediate_access_requested_at"][index]])) throw new Error("Course invoice admission or saved consent mismatch");
+      }
       const applied = await applyInvoicePaid({ env, invoice: obj, sub: before });
       return {
         row: applied.row,

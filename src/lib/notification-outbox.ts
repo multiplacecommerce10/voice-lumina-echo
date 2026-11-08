@@ -12,6 +12,7 @@
 import type { PendingNotification, PayPalStateRepo } from "@/lib/paypal-lifecycle";
 
 export type OutboxKind =
+  | "scholarship_received"
   | "welcome_confirmation"
   | "account_access"
   | "renewal_receipt"
@@ -30,7 +31,7 @@ export type OutboxInsert = {
   recipient: string | null;
 };
 
-export type OutboxRow = OutboxInsert & { id: string; attempts: number };
+export type OutboxRow = OutboxInsert & { id: string; attempts: number; payload?: Record<string, unknown> };
 
 /** Expands lifecycle notifications into deliverable outbox rows (one email per row). */
 export function expandNotification(

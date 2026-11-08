@@ -1,7 +1,6 @@
 import type { EnrollmentProfile } from "./enrollment-profile";
 import { getAccessToken, PAYPAL_API_BASE } from "./paypal.server";
 import { assertPayPalOrder, invitationValid, PAYPAL_DIAGNOSTIC_PAYEE, DIAGNOSTIC_ORIGIN, diagnosticOffer } from "./private-diagnostic-rules";
-import { PAYMENT_DIAGNOSTIC, DIAGNOSTIC_LABEL } from "./payment-diagnostic";
 import { createStripeClient } from "./stripe.server";
 import { buildIntegrationIdentifier } from "./payments-helpers";
 
@@ -26,13 +25,20 @@ export async function hashDiagnosticToken(token: string) {
 }
 export function newDiagnosticToken() { return Array.from(crypto.getRandomValues(new Uint8Array(32)), n => n.toString(16).padStart(2, "0")).join(""); }
 export async function diagnosticInvite(db: any, token: string) {
-  const { data, error } = await db.from("payment_diagnostic_invites").select("id,expires_at,revoked_at,currency,amount_minor,stripe_only").eq("token_hash", await hashDiagnosticToken(token)).maybeSingle();
+  const { data, error } = await db.from("payment_diagnostic_invites").select("id,expires_at,revoked_at,currency,amount_minor,stripe_only,paypal_only").eq("token_hash", await hashDiagnosticToken(token)).maybeSingle();
   if (error) throw new Error("Invitation verification is temporarily unavailable.");
   if (!invitationValid(data)) throw new Error("Invalid, revoked or expired invitation");
   diagnosticOffer(data);
-  return data as { id: string; expires_at: string; revoked_at: string | null; currency: string; amount_minor: number; stripe_only: boolean };
+  return data as { id: string; expires_at: string; revoked_at: string | null; currency: string; amount_minor: number; stripe_only: boolean; paypal_only: boolean };
 }
-async function paypal(path: string, method = "GET", body?: unknown, requestId?: string) {
+async function paypal(path: string, method = "GET", body?: unknown, requestId?: string, gateway = false) {
+  if (gateway) {
+    const connection = process.env["PAYPAL_API_KEY"], projectKey = process.env["LOVABLE_API_KEY"];
+    if (!connection || !projectKey) throw new Error("The private BRL PayPal offer is not configured. No payment was created.");
+    const response = await fetch(`https://connector-gateway.lovable.dev/paypal${path}`, { method, headers: { Authorization: `Bearer ${projectKey}`, "X-Connection-Api-Key": connection, "Content-Type": "application/json", ...(requestId ? { "PayPal-Request-Id": requestId, Prefer: "return=representation" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    if (!response.ok) { const details = await response.text(); console.error(`PayPal [${response.status}]: ${details}`); throw new Error(`PayPal [${response.status}]: ${details}`); }
+    return response.json();
+  }
   const token = await getAccessToken("live");
   const response = await fetch(`${PAYPAL_API_BASE.live}${path}`, { method, headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(requestId ? { "PayPal-Request-Id": requestId, Prefer: "return=representation" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
   if (!response.ok) throw new Error(`PayPal could not complete this request (HTTP ${response.status}). No new attempt was created.`);
@@ -50,7 +56,7 @@ export async function diagnosticStart(db: any, token: string, provider: "stripe"
   const { data, error } = await db.rpc("reserve_payment_diagnostic", { p_hash: await hashDiagnosticToken(token), p_provider: provider });
   const attempt = data?.[0];
   if (error || !attempt || attempt.invite_id !== invite.id) throw new Error("Unable to reserve this test");
-  if (attempt.provider !== provider || attempt.currency !== invite.currency || attempt.amount_minor !== invite.amount_minor) throw new Error("Private payment offer mismatch");
+  if (attempt.provider !== provider || attempt.currency !== invite.currency || attempt.amount_minor !== invite.amount_minor || Boolean(attempt.paypal_only) !== Boolean(invite.paypal_only)) throw new Error("Private payment offer mismatch");
   if (attempt.provider_id) return provider === "stripe" ? stripeResult(db, attempt) : { id: attempt.id, provider, status: attempt.status, approvalUrl: attempt.status === "open" ? attempt.approval_url : null, clientSecret: null };
   if (attempt.status !== "reserved") throw new Error("This provider attempt has already been used");
   const creation = await db.rpc("claim_diagnostic_creation", { p_id: attempt.id, p_invite: invite.id });
@@ -74,7 +80,7 @@ export async function diagnosticStart(db: any, token: string, provider: "stripe"
   // Stable state is derived from an unguessable invitation and attempt; raw state is never persisted.
   const state = await hashDiagnosticToken(`${token}:${attempt.id}:paypal-return`);
   const returnUrl = `${DIAGNOSTIC_ORIGIN}/private-payment?attempt=${attempt.id}&state=${state}`;
-  const order = await paypal("/v2/checkout/orders", "POST", { intent: "CAPTURE", purchase_units: [{ reference_id: attempt.id, custom_id: `${PAYMENT_DIAGNOSTIC}:${attempt.id}`, description: DIAGNOSTIC_LABEL, payee: { merchant_id: PAYPAL_DIAGNOSTIC_PAYEE }, amount: { currency_code: "USD", value: "1.00" } }], payment_source: { paypal: { experience_context: { shipping_preference: "NO_SHIPPING", user_action: "CONTINUE", return_url: returnUrl, cancel_url: `${returnUrl}&cancelled=1` } } } }, `cv-diag-create-${attempt.id}`);
+  const order = await paypal("/v2/checkout/orders", "POST", { intent: "CAPTURE", purchase_units: [{ reference_id: attempt.id, custom_id: `${offer.marker}:${attempt.id}`, description: offer.productName, payee: { merchant_id: PAYPAL_DIAGNOSTIC_PAYEE }, amount: { currency_code: offer.currency.toUpperCase(), value: (offer.amount / 100).toFixed(2) } }], payment_source: { paypal: { experience_context: { shipping_preference: "NO_SHIPPING", user_action: "CONTINUE", return_url: returnUrl, cancel_url: `${returnUrl}&cancelled=1` } } } }, `cv-diag-create-${attempt.id}`, offer.paypalOnly);
   const bound = { ...attempt, provider_id: order.id, payee_id: PAYPAL_DIAGNOSTIC_PAYEE };
   assertPayPalOrder(order, bound);
   const approvalUrl = order.links?.find((link: any) => link.rel === "payer-action" || link.rel === "approve")?.href;
@@ -92,8 +98,8 @@ export async function diagnosticPayPalReturn(db: any, input: { token: string; at
   const invite = await diagnosticInvite(db, input.token);
   diagnosticOffer(invite, "paypal");
   const { data: attempt, error } = await db.from("payment_diagnostic_attempts").select("*").eq("id", input.attempt).eq("invite_id", invite.id).eq("provider", "paypal").maybeSingle();
-  if (error || !attempt || input.order !== attempt.provider_id || await hashDiagnosticToken(input.state) !== attempt.return_state_hash) throw new Error("Invalid payment return");
-  let order = await paypal(`/v2/checkout/orders/${attempt.provider_id}`);
+  if (error || !attempt || attempt.currency !== invite.currency || attempt.amount_minor !== invite.amount_minor || Boolean(attempt.paypal_only) !== Boolean(invite.paypal_only) || input.order !== attempt.provider_id || await hashDiagnosticToken(input.state) !== attempt.return_state_hash) throw new Error("Invalid payment return");
+  let order = await paypal(`/v2/checkout/orders/${attempt.provider_id}`, "GET", undefined, undefined, Boolean(attempt.paypal_only));
   let facts = assertPayPalOrder(order, attempt);
   if (facts.paid) { await save(db, attempt.id, { status: "paid", paid_at: attempt.paid_at ?? new Date().toISOString(), capture_id: facts.captureId }); await paidHook(db, attempt.invite_id); return { status: "paid", approved: false }; }
   if (input.action === "cancel") {
@@ -106,8 +112,8 @@ export async function diagnosticPayPalReturn(db: any, input: { token: string; at
   const claimed = await db.rpc("claim_diagnostic_capture", { p_id: attempt.id, p_invite: invite.id });
   if (claimed.error || !claimed.data?.length) return { status: "pending", approved: false };
   // This line is reached only by the site's explicit payer confirmation POST.
-  await paypal(`/v2/checkout/orders/${attempt.provider_id}/capture`, "POST", {}, `cv-diag-capture-${attempt.id}`);
-  order = await paypal(`/v2/checkout/orders/${attempt.provider_id}`);
+  await paypal(`/v2/checkout/orders/${attempt.provider_id}/capture`, "POST", {}, `cv-diag-capture-${attempt.id}`, Boolean(attempt.paypal_only));
+  order = await paypal(`/v2/checkout/orders/${attempt.provider_id}`, "GET", undefined, undefined, Boolean(attempt.paypal_only));
   facts = assertPayPalOrder(order, attempt);
   await save(db, attempt.id, { status: facts.paid ? "paid" : "pending", ...(facts.paid ? { paid_at: new Date().toISOString(), capture_id: facts.captureId } : {}) });
   if (facts.paid) await paidHook(db, attempt.invite_id);
@@ -131,4 +137,26 @@ export async function applyPrivateStripeDiagnostic(db: any, event: any) {
   const result = await db.rpc("apply_diagnostic_stripe_event", { p_event: event.id, p_attempt: attempt.id, p_object: session.id, p_type: event.type, p_status: status });
   if (result.error || result.data !== true) throw new Error("Unable to record diagnostic event");
   if (status === "paid") await paidHook(db, attempt.invite_id);
+}
+
+/** Called only after the live PayPal webhook signature has been verified. Never captures. */
+export async function applyPrivatePayPalDiagnostic(db: any, event: any, env: string) {
+  const resource = event.resource;
+  const custom = resource?.custom_id;
+  if (typeof custom !== "string" || !/^(conscious_voice_usd1_v1|conscious_voice_paypal_brl2_v1):/.test(custom)) return false;
+  if (env !== "live") throw new Error("Private PayPal event must be live");
+  const [marker, id] = custom.split(":");
+  if (!/^[a-f0-9-]{36}$/.test(id)) throw new Error("Invalid diagnostic binding");
+  const { data: attempt, error } = await db.from("payment_diagnostic_attempts").select("*").eq("id", id).eq("provider", "paypal").maybeSingle();
+  if (error || !attempt?.provider_id) throw new Error("Diagnostic binding unavailable");
+  const offer = diagnosticOffer({ ...attempt, stripe_only: false }, "paypal");
+  if (marker !== offer.marker || resource.amount?.currency_code !== offer.currency.toUpperCase() || resource.amount?.value !== (offer.amount / 100).toFixed(2) || resource.supplementary_data?.related_ids?.order_id !== attempt.provider_id) throw new Error("Diagnostic PayPal event facts invalid");
+  const order = await paypal(`/v2/checkout/orders/${attempt.provider_id}`, "GET", undefined, undefined, Boolean(attempt.paypal_only));
+  const facts = assertPayPalOrder(order, attempt);
+  if (event.event_type === "PAYMENT.CAPTURE.COMPLETED") {
+    if (!facts.paid || facts.captureId !== resource.id || resource.status !== "COMPLETED") throw new Error("Diagnostic capture not confirmed");
+    await save(db, attempt.id, { status: "paid", paid_at: attempt.paid_at ?? new Date().toISOString(), capture_id: facts.captureId });
+    await paidHook(db, attempt.invite_id);
+  }
+  return true;
 }

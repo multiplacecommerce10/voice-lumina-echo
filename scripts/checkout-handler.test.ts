@@ -1,4 +1,5 @@
 import { mock, test, expect, beforeEach } from "bun:test";
+import { profileAnswers } from "../src/lib/enrollment-profile";
 // Exercise the real handlers with an RPC-builder shim and provider/database mocks.
 // No network or persisted writes: all side effects below are in-memory spies.
 mock.module("@tanstack/react-start", () => ({ createServerFn: () => {
@@ -19,9 +20,10 @@ mock.module("@/lib/stripe.server", () => ({ createStripeClient: () => ({ prices:
   products: { retrieve: async () => ({ name: "Fixture course" }) }, checkout: { sessions: { create, retrieve } } }),
   getStripeErrorMessage: (e: any) => e.message }));
 const { createCheckoutSession, getSubscriptionSummary } = await import("../src/lib/payments.functions");
+const timestamp = new Date().toISOString();
 const input = () => ({ priceId: "live_sub_1m_v1", leadId: "00000000-0000-4000-8000-000000000001", environment: "sandbox" as const,
-  customerEmail: "untrusted@example.com", returnUrl: "http://localhost:8080", consent: { termsVersion: "2026-08-17", privacyVersion: "2026-08-17", refundVersion: "2026-08-17", acceptedAt: new Date().toISOString() } });
-beforeEach(() => { create.mockClear(); update.mockClear(); lead = { email: "approved@example.com", admission_status: "approved" };
+  customerEmail: "untrusted@example.com", returnUrl: "http://localhost:8080", consent: { termsVersion: "2026-08-17", privacyVersion: "2026-08-17", refundVersion: "2026-08-17", acceptedAt: timestamp, immediateAccessAt: timestamp } });
+beforeEach(() => { create.mockClear(); update.mockClear(); lead = { email: "approved@example.com", full_name: "Local Fixture", phone: "+55 123456", admission_status: "approved", answers: { ...profileAnswers({ fullName: "Local Fixture", email: "approved@example.com", phone: "+55 123456", birthDate: "1980-01-01", country: "Brazil", city: "Fixture", address: "Fixture", profession: "Singer", musicLevel: "Beginner", academicExperience: "None", musicalPreferences: "Voice", motivation: "Practice" }), legal_consent: input().consent } };
   price = { id: "price_fixture", product: "prod_fixture", lookup_key: "live_sub_1m_v1", active: true, type: "recurring", currency: "usd", unit_amount: 14700, recurring: { interval: "month", interval_count: 1 } }; });
 test("valid checkout preserves upfront automatic renewal and server lead email", async () => {
   await createCheckoutSession({ data: input() });

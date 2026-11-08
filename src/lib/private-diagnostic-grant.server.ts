@@ -80,7 +80,7 @@ export async function resolveCourtesyTarget(db: any, row: OutboxRow) {
       .eq("stripe_subscription_id", sub).eq("environment", "live").maybeSingle();
     if (!s || s.provider !== COURTESY_PROVIDER || s.courtesy_access !== true) throw new Error("courtesy row missing");
   }
-  const { data: invite, error: inviteError } = await db.from("payment_diagnostic_invites").select("currency,amount_minor,stripe_only").eq("id", sub.slice(5)).maybeSingle();
+  const { data: invite, error: inviteError } = await db.from("payment_diagnostic_invites").select("currency,amount_minor,stripe_only,paypal_only").eq("id", sub.slice(5)).maybeSingle();
   if (inviteError || !invite) throw new Error("courtesy payment offer missing");
   const offer = diagnosticOffer(invite);
   return { to: String(g.email).toLowerCase(), fullName: g.full_name as string | null, existing: g.existing_access === true, receiptAmount: offer.receiptAmount };

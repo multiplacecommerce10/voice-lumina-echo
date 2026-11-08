@@ -93,9 +93,9 @@ export const submitEnrollment = createServerFn({ method: "POST" })
           submitted_at: timestamp,
         },
       });
-      if (error) console.error("[submitEnrollment] lead insert failed:", error.message);
+      if (error) throw new Error("Could not save your enrollment details.");
     } catch (e) {
-      console.error("[submitEnrollment] lead insert unexpected:", e);
+      throw new Error("Could not save your enrollment details. No enrollment was confirmed; please try again.");
     }
 
     const row = [
@@ -118,7 +118,7 @@ export const submitEnrollment = createServerFn({ method: "POST" })
     ];
 
     const range = `${SHEET_TAB}!A1`;
-    const url = `${GATEWAY_URL}/spreadsheets/${SPREADSHEET_ID}/values/${range}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+    const url = `${GATEWAY_URL}/spreadsheets/${SPREADSHEET_ID}/values/${range}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
 
     const response = await fetch(url, {
       method: "POST",

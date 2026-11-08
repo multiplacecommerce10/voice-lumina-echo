@@ -1,17 +1,24 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { assertStoredEnrollment } from "./enrollment-safety";
 
 const Env = z.enum(["sandbox", "live"]);
 
 /** Whether PayPal checkout may be shown, plus the publishable client id. */
 export const getPayPalCheckoutConfig = createServerFn({ method: "POST" })
-  .validator((d: unknown) => z.object({ environment: Env }).parse(d))
+  .validator((d: unknown) => z.object({ environment: Env, leadId: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const { paypalConfig } = await import("@/lib/paypal.server");
     const { PAYPAL_PLANS } = await import("@/lib/paypal-plans");
     const cfg = paypalConfig(data.environment);
     const available = cfg.complete && PAYPAL_PLANS[data.environment].length === 6;
-    return { available, clientId: available ? cfg.clientId : null };
+    if (!available) return { available: false, clientId: null, reason: "unavailable" as const };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { admissionAllowsCheckout } = await import("@/lib/paypal-admission");
+    const { data: lead, error } = await supabaseAdmin.from("leads").select("admission_status").eq("id", data.leadId).maybeSingle();
+    if (error || !lead) return { available: false, clientId: null, reason: "unavailable" as const };
+    if (!admissionAllowsCheckout(lead.admission_status)) return { available: false, clientId: null, reason: "review_required" as const };
+    return { available: true, clientId: cfg.clientId, reason: null };
   });
 
 const ConsentSchema = z.object({
@@ -45,7 +52,7 @@ export const preparePayPalSubscription = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: lead } = await supabaseAdmin
       .from("leads")
-      .select("id, email, full_name, status, admission_status")
+      .select("id, email, full_name, phone, answers, status, admission_status")
       .eq("id", data.leadId)
       .maybeSingle();
     if (!lead?.email) throw new Error("Please complete your enrollment details first.");
@@ -57,8 +64,9 @@ export const preparePayPalSubscription = createServerFn({ method: "POST" })
     }
     // Rolling admission requires Cuca Medina's recorded human decision on THIS lead.
     if (!admissionAllowsCheckout((lead as any).admission_status)) {
-      throw new Error("Enrollment is currently by review. Please request consideration and we will contact you.");
+      return { reason: "review_required" as const, error: "Your enrollment is awaiting pedagogical review. We will contact you after the review; payment is not available yet." };
     }
+    assertStoredEnrollment(lead, data.consent);
     const { data: intent, error } = await (supabaseAdmin as any)
       .from("paypal_checkout_intents")
       .insert({

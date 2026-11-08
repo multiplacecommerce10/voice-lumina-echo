@@ -1,6 +1,8 @@
 # Architecture rules
 
-- Private diagnostic offers use immutable server-stored invitation and attempt currency/amount bindings; BRL is Stripe-only, each whitelisted BRL amount has its own exact one-time catalog key and marker, while existing USD and PayPal offers remain unchanged. Confirmation amounts come from the bound invitation, never client metadata.
+- Scholarship applications use a stable request key and one service-only transaction for the pending record and durable receipt; retries cannot change the recipient or grant admission. Official Stripe invoice fulfillment validates exact current catalog facts and persisted enrollment consent before access.
+
+- Private diagnostic offers use immutable server-stored invitation and attempt currency/amount/provider bindings; Stripe BRL offers keep their exact catalog keys, and explicit PayPal-only BRL invitations use a separate marker without enabling PayPal on old Stripe invitations. Confirmation amounts come from the bound invitation, never client metadata.
 
 - Shared enrollment birth dates use an isolated native-select control with a hidden ISO value and first-select error focus; the existing shared profile schema remains the validation authority so restored data and server payloads stay compatible.
 

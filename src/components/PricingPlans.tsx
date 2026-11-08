@@ -437,7 +437,7 @@ export function PricingPlans() {
             International bank transfer (manual transfer — does not renew)
           </button>
           <p className="text-xs text-muted-foreground text-center mt-3">
-            Weekly 90-min live class · 2 individual 30-min sessions per 30-day cycle · Tuesdays 9:30–11:00 (São Paulo)
+            Weekly 90-min live class · 2 individual 30-min sessions per 30-day cycle · Mondays 9:30–11:00 (São Paulo)
           </p>
           <p className="text-[11px] text-muted-foreground/70 text-center mt-2">
             ✧ The exclusive monthly VIP gathering is not included in this tier — it is part of
@@ -546,9 +546,9 @@ export function PricingPlans() {
           discount on the value of the work.
         </p>
         <p className="text-sm text-primary/90">
-          The Founding Cohort begins October 20, 2026 and holds a maximum of{" "}
+          The Founding Cohort begins December 7, 2026 and holds a maximum of{" "}
           {COURSE_MODEL.cohort_max_active_students} active students. After it begins, admission
-          continues only after a personal pedagogical review by Cuca Medina — a free place is
+          is open through January 3, 2027, including entry into the group already in progress, only after a personal pedagogical review by Cuca Medina — a free place is
           never claimed automatically. If the cohort is full or under review, you can join the
           waiting list and request consideration.
         </p>

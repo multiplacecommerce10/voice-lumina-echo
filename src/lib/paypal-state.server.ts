@@ -332,6 +332,10 @@ export async function runOutbox(now = () => Date.now()) {
   return processOutbox({
     store: supabaseOutboxStore(),
     deliver: async (row) => {
+      if (row.provider === "enrollment_projection" && row.kind === "enrollment_sheet") {
+        const { deliverEnrollmentProjection } = await import("./enrollment-projection.server");
+        return deliverEnrollmentProjection(row);
+      }
       if (row.provider === "scholarship" && row.kind === "scholarship_received") {
         if (!row.recipient || typeof row.payload?.fullName !== "string") throw new Error("Scholarship receipt binding missing");
         const { buildScholarshipApplicationEmail } = await import("./scholarship-email");

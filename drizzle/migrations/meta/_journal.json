@@ -169,6 +169,27 @@
       "when": 1794163424190,
       "tag": "0023_scholarship_server_field_validation",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794163837947,
+      "tag": "0024_enrollment_authoritative_retry_projection",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794163900853,
+      "tag": "0025_enrollment_stable_sheet_position",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794164639136,
+      "tag": "0026_enrollment_retry_json_comparison",
+      "breakpoints": true
     }
   ]
 }

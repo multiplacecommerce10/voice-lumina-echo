@@ -93,7 +93,7 @@ function ScholarshipResultPage() {
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   To secure your place, complete your enrollment. Your individual study cycle and
                   course access begin only after your enrollment is confirmed — the Founding Cohort
-                  starts on October 20, 2026.
+                  starts on December 7, 2026.
                 </p>
               </div>
               <div className="mt-6 flex flex-wrap gap-3">

@@ -1,6 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { profileSchema } from "@/lib/enrollment-profile";
+import { enrollmentTimezone } from "./enrollment-projection";
+import { getRequest } from "@tanstack/react-start/server";
+import { assertDiagnosticOrigin } from "./private-diagnostic-rules";
 import { COURSE_START_UTC, formatClassInTimeZone } from "@/lib/course-schedule";
 import {
   COURSE_MODEL,
@@ -9,11 +12,9 @@ import {
   type Tier,
 } from "@/lib/entitlements";
 
-const SPREADSHEET_ID = "1H12v76VWsxnNTGT4CjDeQ5Bo5LJ8t8v0Y5YxX78bbWg";
-const SHEET_TAB = "Página1";
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_sheets/v4";
 
 const enrollmentSchema = z.object({
+  requestId: z.string().uuid(),
   fullName: z.string().trim().min(2).max(120),
   birthDate: z.string().trim().min(4).max(20),
   city: z.string().trim().min(1).max(120),
@@ -46,22 +47,16 @@ export type EnrollmentInput = z.infer<typeof enrollmentSchema>;
 export const submitEnrollment = createServerFn({ method: "POST" })
   .validator((input: unknown) => enrollmentSchema.parse(input))
   .handler(async ({ data }) => {
-    const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-    const GOOGLE_SHEETS_API_KEY = process.env.GOOGLE_SHEETS_API_KEY;
-    if (!GOOGLE_SHEETS_API_KEY) {
-      throw new Error("GOOGLE_SHEETS_API_KEY is not configured");
-    }
-
+    const request = getRequest();
+    assertDiagnosticOrigin(request.headers.get("origin"), new URL(request.url).origin, request.headers.get("sec-fetch-site"));
+    data.timezone = enrollmentTimezone(data.timezone);
     const timestamp = new Date().toISOString();
 
     // 1) Persist the lead first, so the contact + answers are saved even if
     //    the spreadsheet/webhooks fail or the person never pays.
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { error } = await supabaseAdmin.from("leads").insert({
+      const { error } = await supabaseAdmin.rpc("record_enrollment_intent", { p_request: data.requestId, p_record: {
         full_name: data.fullName,
         email: data.email.toLowerCase(),
         phone: data.phone || null,
@@ -92,50 +87,10 @@ export const submitEnrollment = createServerFn({ method: "POST" })
           timezone: data.timezone || null,
           submitted_at: timestamp,
         },
-      });
+      } });
       if (error) throw new Error("Could not save your enrollment details.");
     } catch (e) {
       throw new Error("Could not save your enrollment details. No enrollment was confirmed; please try again.");
-    }
-
-    const row = [
-      data.fullName,                              // A Student
-      data.birthDate,                             // B Data de Nascimento
-      data.email,                                 // C Email
-      data.phone,                                 // D Telefone (Whatsapp)
-      data.address,                               // E Endereço
-      data.city,                                  // F Cidade
-      data.country,                               // G País
-      "",                                         // H Column 14
-      data.musicLevel,                            // I Nível de formação Musical
-      data.profession,                            // J Profissão
-      data.plan,                                  // K Equipe (plano escolhido)
-      data.academicExperience,                    // L Experiência musical
-      data.motivation,                            // M O que espera resolver no curso
-      data.attribution,                           // N Observações — UTM attribution
-      data.musicalPreferences,                    // O Preferências Musicais
-      timestamp,                                  // P Data da Inscrição
-    ];
-
-    const range = `${SHEET_TAB}!A1`;
-    const url = `${GATEWAY_URL}/spreadsheets/${SPREADSHEET_ID}/values/${range}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": GOOGLE_SHEETS_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ values: [row] }),
-    });
-
-    if (!response.ok) {
-      const body = await response.text();
-      console.error(`Google Sheets append failed [${response.status}]: ${body}`);
-      throw new Error(
-        `Could not save enrollment (HTTP ${response.status}). Please try again or contact us.`,
-      );
     }
 
     // The form only records an INTENDED tier. It never grants member access:
@@ -201,7 +156,7 @@ export const submitEnrollment = createServerFn({ method: "POST" })
         course_start_utc_formatted: courseStartUtc.full,
         course_start_local_formatted: courseStartLocal.full,
         course_start_summary_text: `The course starts on ${courseStartLocal.full} (your local time) — ${courseStartUtc.full}.`,
-        class_cadence: "Weekly live 90-minute classes, every Tuesday",
+        class_cadence: "Weekly live 90-minute classes, every Monday",
         // All student-facing communication must be written in English.
         language: "en",
         language_name: "English",
@@ -231,7 +186,7 @@ export const submitEnrollment = createServerFn({ method: "POST" })
       }
       await Promise.allSettled(jobs);
     } catch (e) {
-      console.error("[submitEnrollment] webhook forward failed:", e);
+      console.warn("[submitEnrollment] optional forwarding unavailable");
     }
 
 

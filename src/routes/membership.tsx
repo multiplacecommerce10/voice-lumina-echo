@@ -63,8 +63,8 @@ function buildSchedule(startIso: string | null, months: number | null) {
   return out;
 }
 
-// First class: Tuesday, October 20, 2026, 12:30 UTC (09:30 in São Paulo).
-const COURSE_START_UTC = new Date(Date.UTC(2026, 9, 20, 12, 30));
+// First class: Monday, December 7, 2026, 12:30 UTC (09:30 in São Paulo).
+const COURSE_START_UTC = new Date(Date.UTC(2026, 11, 7, 12, 30));
 
 function formatCourseStartUtc(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
@@ -134,7 +134,7 @@ function CourseStartCard() {
       )}
       <p className="mt-4 text-sm text-muted-foreground">
         <span className="text-primary">●</span> Add this to your calendar now. The day is
-        Tuesday, October 20, 2026. All sessions recur weekly from this starting point.
+        Monday, December 7, 2026. All sessions recur weekly from this starting point.
       </p>
     </div>
   );
@@ -156,7 +156,7 @@ function EntitlementsCard({ tier, enrolledAt }: { tier: Tier; enrolledAt: string
   })();
 
   const rows: { label: string; value: string }[] = [
-    { label: "Weekly live cohort class", value: "90 minutes, every Tuesday" },
+    { label: "Weekly live cohort class", value: "90 minutes, every Monday" },
     {
       label: "Private sessions",
       value: `${e.private_sessions_30m_per_30d} × 30 minutes per active 30-day cycle`,

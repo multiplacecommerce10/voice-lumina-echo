@@ -1,5 +1,15 @@
 # Roadmap — Email notifications (Taskade unified flow)
 
+## Current request — New course dates
+- [x] Start December 7, 2026; weekly Mondays 09:30–11:00 São Paulo; applications through January 3, 2027 inclusive, joining the ongoing cohort only after human review. Update shared schedule, pages and emails; verify tests.
+
+## Current request — Independent root follow-up
+- [x] Make enrollment storage authoritative and immutable on retries; queue optional safe Sheets projection and normalize invalid time zones.
+- [x] Remove first-three-applications promises; verify scholarship storage/receipt retry and no admission grant.
+- [x] Mock/rollback checks, report and local browser date verification complete.
+- [ ] BLOCKED: empty Enrollment intents tab creation was cancelled; optional Sheets projection will retry, authoritative enrollment unaffected.
+- [ ] Publish/verify current revision and refresh audit backup; PayPal invitation still blocked by missing connection/capture event and unverified merchant/BRL capability.
+
 ## Current request — Official enrollment / Scholarship audit and private PayPal BRL2
 - [x] Audit validation, storage, privileges, billing, admission/access and notifications; bounded fixes/tests complete; remaining race/mail/ownership limitations documented in docs/enrollment-scholarship-paypal-audit-2026-11-08.md.
 - [x] Add an immutable PayPal-only BRL200 offer without changing old invitations or normal USD prices.

@@ -1,5 +1,7 @@
 # Architecture rules
 
+- Enrollment intents use an immutable request key and atomic service-only lead/outbox storage; Sheets is an optional RAW deterministic-row projection, never the authority for success. Invalid time zones fall back to UTC without discarding the profile.
+
 - Scholarship applications use a stable request key and one service-only transaction for the pending record and durable receipt; retries cannot change the recipient or grant admission. Official Stripe invoice fulfillment validates exact current catalog facts and persisted enrollment consent before access.
 
 - Private diagnostic offers use immutable server-stored invitation and attempt currency/amount/provider bindings; Stripe BRL offers keep their exact catalog keys, and explicit PayPal-only BRL invitations use a separate marker without enabling PayPal on old Stripe invitations. Confirmation amounts come from the bound invitation, never client metadata.

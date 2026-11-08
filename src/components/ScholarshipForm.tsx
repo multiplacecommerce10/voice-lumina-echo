@@ -13,7 +13,6 @@ export function ScholarshipForm() {
   const submit = useServerFn(submitScholarshipApplication);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState("");
-  const [freeSeat, setFreeSeat] = useState(false);
   const requestId = useRef<string | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -54,7 +53,6 @@ export function ScholarshipForm() {
       setErrorMsg(result.error);
       return;
     }
-    setFreeSeat(result.freeSeatCandidate);
     setStatus("success");
     form.reset();
   }
@@ -66,15 +64,6 @@ export function ScholarshipForm() {
         <p className="text-foreground/80 leading-relaxed">
           Thank you for applying. Cuca Medina reviews every application personally, and we will
           reply to your email with the outcome.
-          {freeSeat && (
-            <>
-              {" "}
-              <strong className="text-foreground">
-                Your application is among the first three received
-              </strong>{" "}
-              — if approved, your seat may be fully free of charge.
-            </>
-          )}
         </p>
       </div>
     );

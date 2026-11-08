@@ -1,7 +1,9 @@
 // Shared (browser-safe) course schedule helpers.
-// Live classes: every Tuesday, 12:30–14:00 UTC, starting October 20, 2026.
+// Live classes: every Monday, 12:30–14:00 UTC, starting December 7, 2026.
 
-export const COURSE_START_UTC = new Date(Date.UTC(2026, 9, 20, 12, 30));
+export const COURSE_START_UTC = new Date(Date.UTC(2026, 11, 7, 12, 30));
+export const APPLICATIONS_CLOSE_AT = "2027-01-04T03:00:00.000Z"; // End of Jan 3 in São Paulo.
+export function applicationsOpen(now = Date.now()) { return now < Date.parse(APPLICATIONS_CLOSE_AT); }
 export const CLASS_DURATION_MINUTES = 90;
 export const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -31,7 +33,7 @@ export function isValidTimeZone(tz?: string | null): tz is string {
   }
 }
 
-/** "Tuesday, October 20, 2026 at 9:30 AM – 11:00 AM (Brasilia Standard Time)" */
+/** "Monday, December 7, 2026 at 9:30 AM – 11:00 AM (Brasilia Standard Time)" */
 export function formatClassInTimeZone(classDate: Date, timeZone: string) {
   const tz = isValidTimeZone(timeZone) ? timeZone : "UTC";
   const dayLabel = new Intl.DateTimeFormat("en-US", {

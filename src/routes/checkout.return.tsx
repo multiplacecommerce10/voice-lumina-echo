@@ -5,6 +5,13 @@ import { getCheckoutSummary, type CheckoutSummary } from "@/lib/payments.functio
 import { getStripeEnvironment } from "@/lib/stripe";
 
 export const Route = createFileRoute("/checkout/return")({
+  head: () => ({ meta: [
+    { title: "Enrollment confirmation — The Power of Conscious Voice" },
+    { name: "description", content: "Your payment and enrollment confirmation for The Power of Conscious Voice." },
+    { property: "og:title", content: "Enrollment confirmation — The Power of Conscious Voice" },
+    { property: "og:description", content: "Your payment and enrollment confirmation for The Power of Conscious Voice." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
+  ] }),
   validateSearch: (search: Record<string, unknown>): { session_id?: string } => ({
     session_id: typeof search.session_id === "string" ? search.session_id : undefined,
   }),
@@ -30,7 +37,7 @@ const LIVE_NEXT_STEPS = [
   },
   {
     title: "Save the rhythm",
-    body: "Live sessions are Tuesdays, 9:30–11:00 (São Paulo time). A calendar invite with the Zoom link arrives before the first class.",
+    body: "Live sessions are Mondays, 9:30–11:00 (São Paulo time). A calendar invite with the Zoom link arrives before the first class.",
   },
   {
     title: "Prepare your space",

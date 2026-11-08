@@ -248,6 +248,8 @@ export type Database = {
           checkout_started_at: string | null
           created_at: string
           email: string
+          enrollment_request_id: string | null
+          enrollment_sheet_row: number | null
           fbclid: string | null
           full_name: string
           gclid: string | null
@@ -282,6 +284,8 @@ export type Database = {
           checkout_started_at?: string | null
           created_at?: string
           email: string
+          enrollment_request_id?: string | null
+          enrollment_sheet_row?: number | null
           fbclid?: string | null
           full_name: string
           gclid?: string | null
@@ -316,6 +320,8 @@ export type Database = {
           checkout_started_at?: string | null
           created_at?: string
           email?: string
+          enrollment_request_id?: string | null
+          enrollment_sheet_row?: number | null
           fbclid?: string | null
           full_name?: string
           gclid?: string | null
@@ -1388,6 +1394,10 @@ export type Database = {
       has_active_membership: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       pending_diagnostic_grants: { Args: never; Returns: string[] }
+      record_enrollment_intent: {
+        Args: { p_record: Json; p_request: string }
+        Returns: string
+      }
       record_scholarship_application: {
         Args: { p_data: Json; p_privacy_version: string; p_request: string }
         Returns: string

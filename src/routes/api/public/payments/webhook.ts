@@ -691,7 +691,7 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
                   course_start_utc_formatted: courseStartUtc.full,
                   course_start_local_formatted: courseStartLocal.full,
                   course_start_summary_text: `Your course starts on ${courseStartLocal.full} (your local time) — ${courseStartUtc.full}.`,
-                  class_cadence: "Weekly live 90-minute classes, every Tuesday",
+                  class_cadence: "Weekly live 90-minute classes, every Monday",
                   next_class_at: nextClass.toISOString(),
                   next_class_local_formatted: nextClassLocal.full,
                 },

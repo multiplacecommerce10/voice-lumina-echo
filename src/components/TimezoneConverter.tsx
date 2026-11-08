@@ -289,9 +289,9 @@ const TIMEZONES: Record<string, { tz: string; label: string }[]> = {
   ],
 };
 
-// First class: Tuesday October 20, 2026, 09:30 in São Paulo — that's 12:30 UTC (UTC-3, no DST).
-const FIRST_CLASS_UTC = new Date(Date.UTC(2026, 9, 20, 12, 30));
-const CLASS_END_UTC = new Date(Date.UTC(2026, 9, 20, 14, 0));
+// First class: Monday December 7, 2026, 09:30 in São Paulo — that's 12:30 UTC (UTC-3, no DST).
+const FIRST_CLASS_UTC = new Date(Date.UTC(2026, 11, 7, 12, 30));
+const CLASS_END_UTC = new Date(Date.UTC(2026, 11, 7, 14, 0));
 
 function formatInTz(date: Date, timeZone: string) {
   const time = new Intl.DateTimeFormat("en-US", {
@@ -375,7 +375,7 @@ export function TimezoneConverter() {
               Find your timezone
             </h3>
             <p className="text-sm text-muted-foreground mb-5">
-              Classes start Tuesday, October 20. Select your country and city to see
+              Classes start Monday, December 7. Select your country and city to see
               your local time.
             </p>
 
@@ -436,12 +436,12 @@ export function TimezoneConverter() {
                 </>
               ) : (
                 <p className="font-display text-2xl text-primary text-glow-gold">
-                  Tuesday, October 20, 2026
+                  Monday, December 7, 2026
                 </p>
               )}
               <p className="text-xs text-muted-foreground/80 mt-3 italic">
                 {hasSelection
-                  ? "Based on the first class — Tuesday, October 20, 2026."
+                  ? "Based on the first class — Monday, December 7, 2026."
                   : "Select your country and city above to reveal your local class time."}
               </p>
             </div>

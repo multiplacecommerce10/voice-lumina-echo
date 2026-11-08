@@ -53,6 +53,7 @@ function ScholarshipsPage() {
       </Section>
 
       <Section heading="How to apply">
+        <p>Applications are open through Sunday, January 3, 2027. The cohort begins Monday, December 7, 2026, with classes on Monday mornings, 9:30–11:00 AM São Paulo time. Accepted applicants may join the group already in progress after Cuca Medina’s personal review and confirmed enrollment.</p>
         <p>Fill in the application form below. It asks for:</p>
         <ul>
           <li>your full name, country and city;</li>

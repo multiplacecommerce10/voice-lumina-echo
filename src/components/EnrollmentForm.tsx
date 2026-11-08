@@ -25,6 +25,7 @@ const musicLevels = [
 
 export function EnrollmentForm({ initialProfile, onComplete, embedded = false, diagnostic = false }: { initialProfile?: Partial<EnrollmentProfile>; onComplete?: (profile: EnrollmentProfile) => void | Promise<void>; embedded?: boolean; diagnostic?: boolean }) {
   const formRef = useRef<HTMLFormElement>(null);
+  const enrollmentRequest = useRef<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [restoredProfile, setRestoredProfile] = useState(initialProfile);
   useEffect(() => {
@@ -199,7 +200,8 @@ export function EnrollmentForm({ initialProfile, onComplete, embedded = false, d
     }
     if (diagnostic) { setStatus("error"); setErrorMsg("Private test unavailable."); return; }
     try {
-      await submit({ data: payload });
+      enrollmentRequest.current ??= crypto.randomUUID();
+      await submit({ data: { ...payload, requestId: enrollmentRequest.current } });
       try { sessionStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(checked.data)); } catch { /* storage unavailable */ }
       setStatus("success");
       form.reset();
@@ -207,8 +209,7 @@ export function EnrollmentForm({ initialProfile, onComplete, embedded = false, d
         document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
       }, 600);
     } catch (err) {
-      console.error(err);
-      setErrorMsg(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setErrorMsg("Your details could not be saved. Please try again with the same form.");
       setStatus("error");
     }
   };

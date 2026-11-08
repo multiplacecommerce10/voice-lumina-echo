@@ -12,6 +12,7 @@
 import type { PendingNotification, PayPalStateRepo } from "@/lib/paypal-lifecycle";
 
 export type OutboxKind =
+  | "enrollment_sheet"
   | "scholarship_received"
   | "welcome_confirmation"
   | "account_access"

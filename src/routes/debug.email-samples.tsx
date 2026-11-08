@@ -36,8 +36,8 @@ function EmailSamples() {
     const welcome = buildConfirmationEmail({
       fullName: NAME, email: EMAIL, planIntended: "complete_3m", tier: "complete", durationMonths: 3,
       totalFormatted: null, amountPerCycleFormatted: null, isRecurring: true, isRenewal: false,
-      billingIntervalMonths: 3, nextChargeAtFormatted: null, courseStartFormatted: "October 20, 2026",
-      nextClassFormatted: "October 20, 2026", membershipUrl: "https://consciousvoice.tecendosom.com/members",
+      billingIntervalMonths: 3, nextChargeAtFormatted: null, courseStartFormatted: "December 7, 2026",
+      nextClassFormatted: "December 7, 2026", membershipUrl: "https://consciousvoice.tecendosom.com/members",
     } as any);
     const creds = buildAccessCredentialsEmail({ fullName: NAME, membershipUrl: "https://consciousvoice.tecendosom.com/members", tier: "complete", username: EMAIL, password: "Cv-SamplePass1!" });
     const rec = buildRecoveryEmail({ leadId: "00000000-0000-0000-0000-000000000000", fullName: NAME, planIntended: "complete_3m", resumeCode: "SAMPLE123" });

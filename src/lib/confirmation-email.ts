@@ -52,7 +52,7 @@ export type ConfirmationEmailDraft = {
 function buildWelcomeChecklist(input: ConfirmationEmailInput): string[] {
   const isComplete = input.tier === "complete";
   const checklist: string[] = [
-    "Save the weekly live class in your calendar: Tuesdays, 90 minutes, starting October 20, 2026.",
+    "Save the weekly live class in your calendar: Mondays, 90 minutes, starting December 7, 2026.",
     "Log in to the member area to confirm your access and explore the Method Foundations Library.",
     "Book your first individual 30-minute session — it includes the 10-minute initial voice and expressive mapping.",
     "Join your first live class on time with your camera on and a quiet, private space.",

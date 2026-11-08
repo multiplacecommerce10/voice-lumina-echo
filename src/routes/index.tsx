@@ -30,7 +30,7 @@ export const Route = createFileRoute("/")({
           hasCourseInstance: {
             "@type": "CourseInstance",
             courseMode: "online",
-            startDate: "2026-10-20",
+            startDate: "2026-12-07",
             instructor: { "@type": "Person", name: "Cuca Medina" },
           },
         }),
@@ -153,7 +153,7 @@ function Hero() {
               <span className="text-secondary">●</span> Weekly live 90-min classes
             </span>
             <span className="px-4 py-2 rounded-full glass-card text-foreground/80 mr-[5px] mb-[5px]">
-              <span className="text-primary">●</span> First class · October 20, 2026
+              <span className="text-primary">●</span> First class · December 7, 2026
             </span>
             <TimezoneConverter />
           </div>
@@ -492,14 +492,14 @@ function Instructor() {
 const formatItems = [
   { label: "Weekly 90-min live class", icon: "◉" },
   { label: "International online course", icon: "✺" },
-  { label: "Tuesdays · 9:30–11:00 AM SP", icon: "◐" },
+  { label: "Mondays · 9:30–11:00 AM SP", icon: "◐" },
   { label: "2 private 30-min sessions per 30-day cycle", icon: "◎" },
   { label: "Recorded Method Foundations Library", icon: "▶" },
   { label: "Replays: Complete tier only, from your start date", icon: "⟳" },
   { label: "Private student portal", icon: "◈" },
   { label: "Guided practices & materials", icon: "✦" },
   { label: "Real-time Q&A in class", icon: "✧" },
-  { label: "October 20, 2026 · Founding launch", icon: "♪" },
+  { label: "December 7, 2026 · Founding launch", icon: "♪" },
 ];
 
 function Format() {
@@ -622,7 +622,7 @@ function Schedule() {
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-14">
           <p className="text-xs uppercase tracking-[0.3em] text-secondary mb-3">Schedule · Time Zones</p>
-          <h2 className="font-display text-4xl lg:text-5xl">Tuesdays, around the world</h2>
+          <h2 className="font-display text-4xl lg:text-5xl">Mondays, around the world</h2>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {schedule.map((s) => (
@@ -740,7 +740,7 @@ const faqs = [
   },
   {
     q: "Is a seat guaranteed once I choose a plan?",
-    a: "No. The Founding Cohort begins October 20, 2026 with a maximum of 30 active students. Your place is confirmed only after payment is confirmed and admission is permitted. Once the cohort has begun, admission continues on a rolling basis only after a personal pedagogical review by Cuca Medina — an open number never reopens enrollment automatically. When the cohort is full, paused or under review, you are welcome to join the waiting list and request consideration.",
+    a: "No. The Founding Cohort begins December 7, 2026 with a maximum of 30 active students. Your place is confirmed only after payment is confirmed and admission is permitted. Applications remain open through Sunday, January 3, 2027, including entry into the cohort already in progress. Once the cohort has begun, admission continues only after a personal pedagogical review by Cuca Medina — an open number never reopens enrollment automatically. When the cohort is full, paused or under review, you are welcome to join the waiting list and request consideration.",
   },
   {
     q: "Do you offer scholarships?",

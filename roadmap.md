@@ -3,7 +3,8 @@
 ## Current request — Official enrollment / Scholarship audit and private PayPal BRL2
 - [x] Audit validation, storage, privileges, billing, admission/access and notifications; bounded fixes/tests complete; remaining race/mail/ownership limitations documented in docs/enrollment-scholarship-paypal-audit-2026-11-08.md.
 - [x] Add an immutable PayPal-only BRL200 offer without changing old invitations or normal USD prices.
-- [ ] Verify mocks/rollback fixtures and published private copy; save sanitized report and hash-verified audit backup with main unchanged.
+- [x] Mocks/rollback fixtures and sanitized report complete; audit backup verified 35 full file hashes, main unchanged.
+- [ ] BLOCKED: publication requested; custom-domain HTTP200/browser still lacks the new PayPal marker. Published private copy not confirmed.
 - [ ] BLOCKED: PayPal connection absent, capture-completed event not registered, merchant identity read401/BRL capability unverified. No new invitation; all existing invitations/courtesies preserved.
 
 ## Current request — PayPal approval notice

@@ -33,3 +33,6 @@ Migrations 0021–0023 applied; private tables/RPCs remain service-only. New sch
 
 ## Publication and repository
 Authorized publication requested after tests; final domain marker verification is recorded in the completion note. Sanitize backup: source/migrations/tests/report only, no env files, secrets, PII, real invitation tokens or media. Preserve GitHub main at `38eb31edd51f17e29e2d895bc3e3158b3414fa7f`; audit branch only.
+
+### Final check
+Publication requested, but custom-domain HTTP200 and browser still lack `data-private-paypal-brl2-version`; deployment of this revision is unconfirmed. No invitation issued. First audit snapshot `6b52c8fd51fbeaa80a30d193866de73fd8fba88b` verified 35 full file hashes and unchanged GitHub main. Final report/roadmap readback is included in the follow-up audit snapshot.

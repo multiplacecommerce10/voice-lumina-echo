@@ -13,7 +13,7 @@ export const readPrivateInvitation = createServerFn({ method: "POST" }).inputVal
     const { data: attempts, error } = await supabaseAdmin.from("payment_diagnostic_attempts").select("id,provider,status").eq("invite_id", invite.id);
     if (error) throw new Error("Unable to read test status");
     const offer = diagnosticOffer(invite);
-    return { valid: true, expiresAt: invite.expires_at, attempts: attempts ?? [], currency: offer.currency, stripeOnly: offer.stripeOnly, taxNotice: "Automatic tax calculation is off for this private test, as authorized by the owner. This does not establish a tax exemption.", version: PRIVATE_DIAGNOSTIC_VERSION };
+    return { valid: true, expiresAt: invite.expires_at, attempts: attempts ?? [], currency: offer.currency, amountMinor: offer.amount, displayAmount: offer.displayAmount, stripeOnly: offer.stripeOnly, taxNotice: "Automatic tax calculation is off for this private test, as authorized by the owner. This does not establish a tax exemption.", version: PRIVATE_DIAGNOSTIC_VERSION };
   } catch (error) { return { valid: false, error: error instanceof Error && error.message === "Invalid, revoked or expired invitation" ? "Invalid, revoked or expired private invitation." : "Invitation verification is temporarily unavailable. Please try again." }; }
 });
 export const savePrivateDiagnosticForm = createServerFn({ method: "POST" }).inputValidator(diagnosticSaveSchema).handler(async ({ data }) => {

@@ -1,0 +1,4 @@
+ALTER TABLE public.payment_diagnostic_invites DROP CONSTRAINT diagnostic_invite_offer;
+ALTER TABLE public.payment_diagnostic_invites ADD CONSTRAINT diagnostic_invite_offer CHECK ((currency='usd' AND amount_minor=100 AND stripe_only=false) OR (currency='brl' AND amount_minor IN (100,200) AND stripe_only=true));
+ALTER TABLE public.payment_diagnostic_attempts DROP CONSTRAINT diagnostic_attempt_offer;
+ALTER TABLE public.payment_diagnostic_attempts ADD CONSTRAINT diagnostic_attempt_offer CHECK ((currency='usd' AND amount_minor=100) OR (currency='brl' AND amount_minor IN (100,200) AND provider='stripe'));

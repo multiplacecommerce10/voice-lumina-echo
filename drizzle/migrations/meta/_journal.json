@@ -141,6 +141,13 @@
       "when": 1794127710453,
       "tag": "0019_diagnostic_service_only_explicit_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794159956756,
+      "tag": "0020_private_diagnostic_brl2_binding",
+      "breakpoints": true
     }
   ]
 }

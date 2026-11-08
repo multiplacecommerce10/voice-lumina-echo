@@ -7,7 +7,7 @@ import { readPrivateInvitation, savePrivateDiagnosticForm, startPrivateDiagnosti
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
 import { getStripe, getStripeEnvironment } from "@/lib/stripe";
 import { DIAGNOSTIC_DISPLAY_LABEL } from "@/lib/payment-diagnostic";
-import { PRIVATE_DIAGNOSTIC_VERSION, PRIVATE_BRL_VERSION } from "@/lib/private-diagnostic-rules";
+import { PRIVATE_DIAGNOSTIC_VERSION, PRIVATE_BRL_VERSION, PRIVATE_BRL2_VERSION } from "@/lib/private-diagnostic-rules";
 import type { EnrollmentProfile } from "@/lib/enrollment-profile";
 import logo from "@/assets/tecendo-som-logo.png";
 import { TicketCheck } from "lucide-react";
@@ -79,7 +79,7 @@ function PrivatePaymentSession({ token }: { token: string }) {
   }, [token, stripeAttempt, invite?.valid]);
   let liveStripe = false; try { liveStripe = getStripeEnvironment() === "live"; } catch { /* fail closed */ }
   const brl = invite?.valid && invite.currency === "brl";
-  const amountLabel = brl ? "R$ 1" : "US$ 1";
+  const amountLabel = brl ? (invite.amountMinor === 200 ? "R$ 2" : "R$ 1") : "US$ 1";
   async function choose(provider: "stripe" | "paypal") {
     if (!profile || !consent || busy || (brl && provider === "paypal")) return; setBusy(true); setError("");
     try { const result = await start({ data: { token, profile, consent: true, provider } });
@@ -91,7 +91,7 @@ function PrivatePaymentSession({ token }: { token: string }) {
     try { const result = await returned({ data: { token, ...returnInput, action: "capture", confirm: true } }); if ("error" in result) setError(result.error ?? "Payment verification unavailable"); else setPayment(result); }
     catch { setError("Payment verification pending. Do not submit another payment."); } finally { setBusy(false); }
   }
-  return <main className="mx-auto max-w-3xl px-5 py-10" data-private-offer-layout="concise-v1" data-private-brl-version={PRIVATE_BRL_VERSION} data-diagnostic-currency={invite?.valid ? invite.currency : undefined} data-diagnostic-version={PRIVATE_DIAGNOSTIC_VERSION} data-diagnostic-form-storage="private-full-profile-v1" data-diagnostic-form-saved={profile ? "true" : "false"}>
+  return <main className="mx-auto max-w-3xl px-5 py-10" data-private-offer-layout="concise-v1" data-private-brl-version={PRIVATE_BRL_VERSION} data-private-brl2-version={PRIVATE_BRL2_VERSION} data-diagnostic-amount-minor={invite?.valid ? invite.amountMinor : undefined} data-diagnostic-currency={invite?.valid ? invite.currency : undefined} data-diagnostic-version={PRIVATE_DIAGNOSTIC_VERSION} data-diagnostic-form-storage="private-full-profile-v1" data-diagnostic-form-saved={profile ? "true" : "false"}>
     <img src={logo} alt="Tecendo Som" className="h-16 w-16 object-contain mb-5" />
     {!invite?.valid && <h1 className="font-display text-3xl text-foreground">Private payment invitation</h1>}
     {!token ? <p role="alert" className="mt-8">A private invitation is required.</p> : !invite ? <p className="mt-8">Checking invitation…</p> : !invite.valid ? <p role="alert" className="mt-8">{invite.error}</p> : <>
@@ -116,7 +116,7 @@ function PrivatePaymentSession({ token }: { token: string }) {
         {payment?.status === "paid" ? <p className="my-4">{amountLabel} payment confirmed. Your 7-day courtesy access and welcome emails are on the way.</p> : clientSecret && liveStripe ? <EmbeddedCheckoutProvider stripe={getStripe()} options={{ clientSecret }}><EmbeddedCheckout /></EmbeddedCheckoutProvider> : <p className="my-4">{payment?.status === "expired" ? "Checkout expired. No payment confirmed." : "Payment verification pending."}</p>}
         {!brl && <Button className="mt-5" variant="outline" onClick={() => { setStripeAttempt(""); sessionStorage.removeItem(`private-diagnostic-stripe:${token}`); setClientSecret(null); setPayment(null); read({ data: { token } }).then(setInvite); }}>Other provider</Button>}
       </section> : returnInput ? <section className="mt-8 border-t border-border pt-6"><h2 className="text-xl">PayPal payment confirmation</h2>
-        <p className="my-4">{payment?.status === "paid" ? "US$1 payment confirmed. Your 7-day courtesy access and welcome emails are on the way." : payment?.status === "cancelled" ? "Payment cancelled. No payment was confirmed." : payment?.approved ? "PayPal approval verified. Confirm the real US$1 payment to Tecendo Som below." : "Payment is not confirmed. Awaiting verification."}</p>
+        <p className="my-4">{payment?.status === "paid" ? `${amountLabel} payment confirmed. Your 7-day courtesy access and welcome emails are on the way.` : payment?.status === "cancelled" ? "Payment cancelled. No payment was confirmed." : payment?.approved ? "PayPal approval verified. Confirm the real US$1 payment to Tecendo Som below." : "Payment is not confirmed. Awaiting verification."}</p>
         {payment?.approved && <Button disabled={busy} onClick={pay}>{busy ? "Verifying…" : "Pay US$1"}</Button>}
         <Button className="mt-5" variant="outline" onClick={() => { setReturnInput(null); sessionStorage.removeItem(`private-diagnostic-return:${token}`); setPayment(null); read({ data: { token } }).then(setInvite); }}>Other provider</Button>
       </section> : !profile ? <div className="mt-8"><h2 className="mb-5 text-xl font-display">Your details</h2><EnrollmentForm embedded diagnostic onComplete={async values => {

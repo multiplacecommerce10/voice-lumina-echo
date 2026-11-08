@@ -10,3 +10,7 @@
 - No actual checkout session, order, charge, capture, user or email is created during verification. Invitation tokens and personal data must not enter source, documentation or the audit branch.
 
 Publication marker: `data-private-brl-version="private-guest-brl1-bound-v1-20261108"`. Layout remains `concise-v1`.
+
+Additional regressions: 10 checkout-handler tests, all catalog assertions and 195 PayPal lifecycle checks pass. Automatic compilation reports build OK. Browser fixtures verify BRL/USD cards and mock-save consent/provider selection; no real save or checkout is performed.
+
+Deployment gate remains unresolved: publication requested twice, but final custom-domain reads still lack the BRL marker and Stripe live price lookup returns no BRL price. Stripe live onboarding itself is complete. No new invitation has been created; issuance must wait for both deployed-code and catalog confirmation. Audit snapshot f7381f25e0448f53531b7d381defd6d84b37606d contains 18 verified files, main unchanged.
